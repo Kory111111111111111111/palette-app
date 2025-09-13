@@ -10,7 +10,7 @@ import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sparkles, Image, Palette, Loader2, Upload } from 'lucide-react';
-import { PresetPalette, PRESET_PALETTES, GenerationContext, AnalysisQuestion } from '@/types';
+import { PresetPalette, PRESET_PALETTES, GenerationContext, AnalysisQuestion, SavedPalette } from '@/types';
 import { ScreenshotAnalysisModal } from '@/components/ScreenshotAnalysisModal';
 import { AIService } from '@/services/ai';
 import { processImage, validateImage, compressImage } from '@/utils/image';
@@ -22,9 +22,12 @@ interface GeneratorControlsProps {
   colorCount: number;
   onColorCountChange: (count: number) => void;
   aiService: AIService | null;
+  savedPalettes: SavedPalette[];
+  onLoadPalette: (palette: SavedPalette) => void;
+  onDeletePalette: (id: string) => void;
 }
 
-export function GeneratorControls({ onGenerate, isGenerating, lockedColorsCount, colorCount, onColorCountChange, aiService }: GeneratorControlsProps) {
+export function GeneratorControls({ onGenerate, isGenerating, lockedColorsCount, colorCount, onColorCountChange, aiService, savedPalettes, onLoadPalette, onDeletePalette }: GeneratorControlsProps) {
   const [prompt, setPrompt] = useState('');
   const [selectedPresets, setSelectedPresets] = useState<PresetPalette[]>([]);
   const [presetMode, setPresetMode] = useState<'inspired' | 'strict'>('inspired');
@@ -223,10 +226,11 @@ export function GeneratorControls({ onGenerate, isGenerating, lockedColorsCount,
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="prompt" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="prompt">Prompt</TabsTrigger>
               <TabsTrigger value="preset">Presets</TabsTrigger>
               <TabsTrigger value="screenshot">Screenshot</TabsTrigger>
+              <TabsTrigger value="saved">Saved</TabsTrigger>
             </TabsList>
 
             {/* Prompt Tab */}
@@ -419,6 +423,58 @@ export function GeneratorControls({ onGenerate, isGenerating, lockedColorsCount,
                   )}
                   Analyze & Generate
                 </Button>
+              </div>
+            </TabsContent>
+
+            {/* Saved Palettes Tab */}
+            <TabsContent value="saved" className="space-y-4">
+              <div className="space-y-4">
+                {savedPalettes.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Palette className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-medium mb-2">No saved palettes yet</p>
+                    <p className="text-sm">Generate and save palettes to see them here</p>
+                  </div>
+                ) : (
+                  <ScrollArea className="h-72 w-full rounded-md border">
+                    <div className="p-4 space-y-3">
+                      {savedPalettes.map((palette) => (
+                        <div
+                          key={palette.id}
+                          className="flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors hover:border-primary/50 group"
+                          onClick={() => onLoadPalette(palette)}
+                        >
+                          <div className="flex gap-1 flex-shrink-0 mt-0.5">
+                            {palette.preview.slice(0, 4).map((color, index) => (
+                              <div
+                                key={index}
+                                className="w-4 h-4 rounded border border-border"
+                                style={{ backgroundColor: color }}
+                              />
+                            ))}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium">{palette.name}</p>
+                            <p className="text-xs text-muted-foreground leading-relaxed">
+                              {new Date(palette.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDeletePalette(palette.id);
+                            }}
+                          >
+                            ×
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                )}
               </div>
             </TabsContent>
           </Tabs>

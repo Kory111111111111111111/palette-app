@@ -48,7 +48,7 @@ export function Header({
             <AuroraText 
               className="text-xl font-semibold"
               colors={["#FF0080", "#7928CA", "#0070F3", "#38bdf8", "#FF6B6B", "#4ECDC4"]}
-              speed={1.5}
+              speed={0.8}
             >
               Palette Generator
             </AuroraText>

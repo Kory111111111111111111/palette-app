@@ -248,6 +248,9 @@ export default function HomePage() {
               colorCount={colorCount}
               onColorCountChange={setColorCount}
               aiService={aiService}
+              savedPalettes={savedPalettes}
+              onLoadPalette={handleLoadPalette}
+              onDeletePalette={handleDeletePalette}
             />
               </div>
             </div>
