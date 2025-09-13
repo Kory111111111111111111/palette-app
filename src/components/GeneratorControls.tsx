@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sparkles, Image, Palette, Loader2, Upload } from 'lucide-react';
 import { PresetPalette, PRESET_PALETTES, GenerationContext } from '@/types';
 
@@ -96,7 +97,7 @@ export function GeneratorControls({ onGenerate, isGenerating, lockedColorsCount,
   }, {} as Record<string, PresetPalette[]>);
 
   return (
-    <div className="w-full max-w-md space-y-6">
+    <div className="w-full max-w-xl space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -134,14 +135,15 @@ export function GeneratorControls({ onGenerate, isGenerating, lockedColorsCount,
                   value={[colorCount]}
                   onValueChange={(value) => onColorCountChange(value[0])}
                   min={6}
-                  max={20}
+                  max={35}
                   step={1}
                   className="w-full"
                 />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Minimal (6)</span>
-                  <span>Balanced (12)</span>
-                  <span>Rich (20)</span>
+                <div className="flex justify-between text-xs text-muted-foreground px-2">
+                  <span className="text-center">Minimal<br />(6)</span>
+                  <span className="text-center">Balanced<br />(12)</span>
+                  <span className="text-center">Rich<br />(20)</span>
+                  <span className="text-center">Extended<br />(35)</span>
                 </div>
               </div>
               
@@ -186,54 +188,57 @@ export function GeneratorControls({ onGenerate, isGenerating, lockedColorsCount,
                       value={[colorCount]}
                       onValueChange={(value) => onColorCountChange(value[0])}
                       min={6}
-                      max={20}
+                      max={35}
                       step={1}
                       className="w-full"
                     />
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>Minimal (6)</span>
-                      <span>Balanced (12)</span>
-                      <span>Rich (20)</span>
-                    </div>
+                     <div className="flex justify-between text-xs text-muted-foreground px-2">
+                       <span className="text-center">Minimal<br />(6)</span>
+                       <span className="text-center">Balanced<br />(12)</span>
+                       <span className="text-center">Rich<br />(20)</span>
+                       <span className="text-center">Extended<br />(35)</span>
+                     </div>
                   </div>
                 </div>
 
-                <div className="space-y-3 max-h-60 overflow-y-auto">
-                  {Object.entries(presetGroups).map(([group, presets]) => (
-                    <div key={group} className="space-y-2">
-                      <h4 className="text-sm font-medium text-muted-foreground">{group}</h4>
-                      {presets.map((preset) => (
-                        <div
-                          key={preset.name}
-                          className={`flex items-center gap-3 p-2 rounded-lg border cursor-pointer transition-colors ${
-                            selectedPresets.includes(preset)
-                              ? 'border-primary bg-primary/10'
-                              : 'border-border hover:border-primary/50'
-                          }`}
-                          onClick={() => handlePresetToggle(preset)}
-                        >
-                          <div className="flex gap-1">
-                            {preset.colors.slice(0, 4).map((color, index) => (
-                              <div
-                                key={index}
-                                className="w-4 h-4 rounded border border-border"
-                                style={{ backgroundColor: color }}
-                              />
-                            ))}
+                <ScrollArea className="h-72 w-full rounded-md border">
+                  <div className="p-4 space-y-3">
+                    {Object.entries(presetGroups).map(([group, presets]) => (
+                      <div key={group} className="space-y-2">
+                        <h4 className="text-sm font-medium text-muted-foreground">{group}</h4>
+                        {presets.map((preset) => (
+                          <div
+                            key={preset.name}
+                            className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                              selectedPresets.includes(preset)
+                                ? 'border-primary bg-primary/10'
+                                : 'border-border hover:border-primary/50'
+                            }`}
+                            onClick={() => handlePresetToggle(preset)}
+                          >
+                            <div className="flex gap-1 flex-shrink-0 mt-0.5">
+                              {preset.colors.slice(0, 4).map((color, index) => (
+                                <div
+                                  key={index}
+                                  className="w-4 h-4 rounded border border-border"
+                                  style={{ backgroundColor: color }}
+                                />
+                              ))}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium">{preset.name}</p>
+                              {preset.description && (
+                                <p className="text-xs text-muted-foreground leading-relaxed">
+                                  {preset.description}
+                                </p>
+                              )}
+                            </div>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{preset.name}</p>
-                            {preset.description && (
-                              <p className="text-xs text-muted-foreground truncate">
-                                {preset.description}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ))}
-                </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
 
                 <Button 
                   onClick={handleGeneratePreset} 

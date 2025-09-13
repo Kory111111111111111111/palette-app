@@ -8,6 +8,8 @@ import { Copy, Lock, Unlock, Trash2, Check } from 'lucide-react';
 import { Color } from '@/types';
 import { isValidHex, normalizeHex, copyToClipboard, getTextColor } from '@/utils/color';
 import { cn } from '@/lib/utils';
+import { motion, useMotionTemplate, useMotionValue } from 'motion/react';
+import { useCallback, useEffect } from 'react';
 
 interface ColorCardProps {
   color: Color;
@@ -29,6 +31,53 @@ export function ColorCard({
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(color.hex);
   const [copied, setCopied] = useState(false);
+
+  // Magic border animation
+  const gradientSize = 200;
+  const mouseX = useMotionValue(-gradientSize);
+  const mouseY = useMotionValue(-gradientSize);
+  
+  const reset = useCallback(() => {
+    mouseX.set(-gradientSize);
+    mouseY.set(-gradientSize);
+  }, [gradientSize, mouseX, mouseY]);
+
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      mouseX.set(e.clientX - rect.left);
+      mouseY.set(e.clientY - rect.top);
+    },
+    [mouseX, mouseY],
+  );
+
+  useEffect(() => {
+    reset();
+  }, [reset]);
+
+  useEffect(() => {
+    const handleGlobalPointerOut = (e: PointerEvent) => {
+      if (!e.relatedTarget) {
+        reset();
+      }
+    };
+
+    const handleVisibility = () => {
+      if (document.visibilityState !== "visible") {
+        reset();
+      }
+    };
+
+    window.addEventListener("pointerout", handleGlobalPointerOut);
+    window.addEventListener("blur", reset);
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      window.removeEventListener("pointerout", handleGlobalPointerOut);
+      window.removeEventListener("blur", reset);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [reset]);
 
   const handleCopy = async () => {
     try {
@@ -72,14 +121,33 @@ export function ColorCard({
     <TooltipProvider>
       <div
         className={cn(
-          'color-card group relative aspect-square min-h-[120px] rounded-lg border-2 transition-all duration-200',
+          'color-card group relative aspect-square min-h-[120px] rounded-lg transition-all duration-200',
           color.locked && 'ring-2 ring-primary ring-offset-2 ring-offset-background',
           className
         )}
-        style={{ backgroundColor: color.hex }}
+        onPointerMove={handlePointerMove}
+        onPointerLeave={reset}
+        onPointerEnter={reset}
       >
-        {/* Color Actions Overlay */}
-        <div className="color-card-actions">
+        {/* Animated border */}
+        <motion.div
+          className="pointer-events-none absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+          style={{
+            background: useMotionTemplate`
+            radial-gradient(${gradientSize}px circle at ${mouseX}px ${mouseY}px,
+            #9E7AFF, 
+            #FE8BBB, 
+            var(--border) 100%
+            )
+            `,
+          }}
+        />
+        <div className="absolute inset-px rounded-lg" style={{ backgroundColor: color.hex }} />
+        
+        {/* Content */}
+        <div className="relative h-full">
+          {/* Color Actions Overlay */}
+          <div className="color-card-actions">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -192,6 +260,7 @@ export function ColorCard({
             </div>
           </div>
         )}
+        </div>
       </div>
     </TooltipProvider>
   );
