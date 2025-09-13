@@ -1,36 +1,151 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Palette Generator
+
+A modern, AI-powered color palette generator built with Next.js, TypeScript, and shadcn/ui. Create beautiful, accessible color palettes for your UI designs using Google's Gemini AI.
+
+## Features
+
+### 🎨 AI-Powered Palette Generation
+- **Prompt-Based Generation**: Describe your vision and let AI create the perfect palette
+- **Preset Integration**: Choose from curated palettes like Nord, Gruvbox, Catppuccin, Solarized, and Rosé Pine
+- **Screenshot Analysis**: Upload UI screenshots for AI-powered palette refinement
+
+### 🛠️ Advanced Palette Management
+- **Lock Colors**: Preserve specific colors while regenerating others
+- **Custom Colors**: Add your own colors and lock them for future generations
+- **Live Editing**: Click any color to edit hex codes inline
+- **Smart Organization**: Colors automatically organized into logical categories
+
+### 📊 Professional Analysis
+- **AI-Powered Insights**: Get detailed analysis of mood, harmony, and accessibility
+- **Use Case Optimization**: Analyze palettes for specific applications
+- **Real-time Streaming**: Watch analysis results appear in real-time
+
+### 💾 Export & Storage
+- **Multiple Formats**: Export as SVG, CSS variables, or FF Hex for game development
+- **Save & Load**: Save palettes with custom names using browser storage
+- **Persistent Storage**: Your work is automatically saved locally
+
+### ♿ Accessibility First
+- **WCAG AA Compliance**: All generated palettes meet accessibility standards
+- **Contrast Validation**: Automatic contrast ratio checking
+- **Keyboard Navigation**: Full keyboard support throughout the app
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+- Node.js 18+ 
+- A Google Gemini API key (get one free at [Google AI Studio](https://makersuite.google.com/app/apikey))
 
+### Installation
+
+1. Clone the repository:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <repository-url>
+cd palette-app
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Install dependencies:
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Start the development server:
+```bash
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-## Learn More
+5. Click the settings button and add your Gemini API key to start generating palettes!
 
-To learn more about Next.js, take a look at the following resources:
+## Usage
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Generating Palettes
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. **From Prompts**: Enter a description like "A vibrant retro arcade" or "A serene minimalist yoga studio"
+2. **From Presets**: Choose from popular color schemes as inspiration or strict templates
+3. **From Screenshots**: Upload UI images for AI analysis and refinement
 
-## Deploy on Vercel
+### Managing Colors
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **Copy**: Click any color card to copy the hex code
+- **Edit**: Click the hex code to edit it inline
+- **Lock**: Use the lock button to preserve colors during regeneration
+- **Remove**: Delete custom colors with the trash button
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Analyzing Palettes
+
+Click "Analyze Palette" to get AI-powered insights about:
+- Overall mood and aesthetic
+- Color harmony and relationships  
+- Accessibility assessment
+- Brand personality
+- Suitability for specific use cases
+- Recommendations for improvement
+
+### Exporting
+
+Choose from multiple export formats:
+- **SVG**: Vector image with color swatches and labels
+- **CSS Variables**: Ready-to-use CSS custom properties
+- **FF Hex**: Hexadecimal values for game development
+
+## Technology Stack
+
+- **Framework**: Next.js 15 with App Router
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS + shadcn/ui components
+- **AI**: Google Gemini 2.0 Flash (via @google/generative-ai)
+- **Storage**: Browser localStorage
+- **Icons**: Lucide React
+
+## Project Structure
+
+```
+src/
+├── app/                 # Next.js app router
+│   ├── globals.css     # Global styles and Tailwind config
+│   ├── layout.tsx      # Root layout
+│   └── page.tsx        # Main application page
+├── components/         # React components
+│   ├── ui/            # shadcn/ui components
+│   ├── Header.tsx     # Application header
+│   ├── ColorCard.tsx  # Individual color display
+│   ├── GeneratorControls.tsx # AI generation controls
+│   ├── PaletteDisplay.tsx    # Main palette view
+│   ├── SettingsPanel.tsx     # Settings modal
+│   └── AnalysisModal.tsx     # Palette analysis modal
+├── services/          # Business logic
+│   ├── ai.ts         # AI service for Gemini API
+│   └── storage.ts    # Local storage management
+├── types/            # TypeScript type definitions
+│   └── index.ts      # All type definitions
+└── utils/            # Utility functions
+    └── color.ts      # Color manipulation utilities
+```
+
+## API Key Setup
+
+1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Create a new API key
+3. Copy the key and paste it in the app settings
+4. Your API key is stored locally and never sent to our servers
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit your changes: `git commit -m 'Add amazing feature'`
+4. Push to the branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments
+
+- Built with [shadcn/ui](https://ui.shadcn.com/) components
+- AI powered by [Google Gemini](https://ai.google.dev/)
+- Icons by [Lucide](https://lucide.dev/)
+- Font by [Inter](https://rsms.me/inter/)
