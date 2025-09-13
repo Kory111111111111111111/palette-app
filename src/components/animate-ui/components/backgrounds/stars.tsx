@@ -22,7 +22,7 @@ type StarLayerProps = HTMLMotionProps<'div'> & {
 function generateStars(count: number, starColor: string) {
   const shadows: string[] = [];
   // Use a much larger range to cover ultrawide monitors
-  const range = Math.max(window.innerWidth * 2, 6000);
+  const range = typeof window !== 'undefined' ? Math.max(window.innerWidth * 2, 6000) : 6000;
   const halfRange = range / 2;
   
   for (let i = 0; i < count; i++) {
@@ -42,12 +42,16 @@ function StarLayer({
   ...props
 }: StarLayerProps) {
   const [boxShadow, setBoxShadow] = React.useState<string>('');
+  const [isClient, setIsClient] = React.useState(false);
 
   const regenerateStars = React.useCallback(() => {
-    setBoxShadow(generateStars(count, starColor));
+    if (typeof window !== 'undefined') {
+      setBoxShadow(generateStars(count, starColor));
+    }
   }, [count, starColor]);
 
   React.useEffect(() => {
+    setIsClient(true);
     regenerateStars();
     
     // Regenerate stars on window resize to cover ultrawide monitors
@@ -55,9 +59,15 @@ function StarLayer({
       regenerateStars();
     };
     
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
   }, [regenerateStars]);
+
+  if (!isClient) {
+    return null;
+  }
 
   return (
     <motion.div
@@ -113,6 +123,8 @@ function StarsBackground({
 
   const handleMouseMove = React.useCallback(
     (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+      if (typeof window === 'undefined') return;
+      
       const centerX = window.innerWidth / 2;
       const centerY = window.innerHeight / 2;
       const newOffsetX = -(e.clientX - centerX) * factor;
