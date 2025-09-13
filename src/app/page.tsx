@@ -236,36 +236,38 @@ export default function HomePage() {
           canSave={canSave}
         />
 
-        <main className="container mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            {/* Left Sidebar - Generator Controls */}
-            <div className="lg:col-span-1">
-              <div className="sticky top-24">
-            <GeneratorControls
-              onGenerate={handleGenerate}
-              isGenerating={isGenerating}
-              lockedColorsCount={lockedColorsCount}
-              colorCount={colorCount}
-              onColorCountChange={setColorCount}
-              aiService={aiService}
-              savedPalettes={savedPalettes}
-              onLoadPalette={handleLoadPalette}
-              onDeletePalette={handleDeletePalette}
-            />
+        <main className="w-full px-4 py-8">
+          <div className="max-w-8xl mx-auto">
+            <div className="grid grid-cols-1 xl:grid-cols-5 responsive-stack gap-8">
+              {/* Left Sidebar - Generator Controls */}
+              <div className="xl:col-span-2">
+                <div className="sticky top-24">
+                  <GeneratorControls
+                    onGenerate={handleGenerate}
+                    isGenerating={isGenerating}
+                    lockedColorsCount={lockedColorsCount}
+                    colorCount={colorCount}
+                    onColorCountChange={setColorCount}
+                    aiService={aiService}
+                    savedPalettes={savedPalettes}
+                    onLoadPalette={handleLoadPalette}
+                    onDeletePalette={handleDeletePalette}
+                  />
+                </div>
               </div>
-            </div>
 
-            {/* Main Content - Palette Display */}
-            <div className="lg:col-span-3">
-              <PaletteDisplay
-                palette={palette}
-                onColorChange={handleColorChange}
-                onLockToggle={handleLockToggle}
-                onRemoveColor={handleRemoveColor}
-                onAddCustomColor={handleAddCustomColor}
-                onAnalyzePalette={() => setAnalysisOpen(true)}
-                isGenerating={isGenerating}
-              />
+              {/* Main Content - Palette Display */}
+              <div className="xl:col-span-3">
+                <PaletteDisplay
+                  palette={palette}
+                  onColorChange={handleColorChange}
+                  onLockToggle={handleLockToggle}
+                  onRemoveColor={handleRemoveColor}
+                  onAddCustomColor={handleAddCustomColor}
+                  onAnalyzePalette={() => setAnalysisOpen(true)}
+                  isGenerating={isGenerating}
+                />
+              </div>
             </div>
           </div>
         </main>

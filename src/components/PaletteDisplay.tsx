@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, Plus, Sparkles } from 'lucide-react';
+import { ChevronDown, Plus } from 'lucide-react';
 import { ColorCard } from './ColorCard';
+import { ColorPaletteHeader } from './ColorPaletteHeader';
 import { UIPalette, Color } from '@/types';
 import { isValidHex, normalizeHex } from '@/utils/color';
 
@@ -93,7 +94,7 @@ export function PaletteDisplay({
         </CollapsibleTrigger>
         <CollapsibleContent>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
               {colors.map((color, index) => (
                 <ColorCard
                   key={`${category}-${index}`}
@@ -118,20 +119,13 @@ export function PaletteDisplay({
 
   return (
     <div className="space-y-6">
-      {/* Header with Analysis Button */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Color Palette</h2>
-          <p className="text-muted-foreground">
-            {Object.values(palette).reduce((count, colors) => count + colors.length, 0)} colors total
-            {lockedCount > 0 && ` • ${lockedCount} locked`}
-          </p>
-        </div>
-        <Button onClick={onAnalyzePalette} disabled={isGenerating}>
-          <Sparkles className="h-4 w-4 mr-2" />
-          Analyze Palette
-        </Button>
-      </div>
+      {/* Header Card */}
+      <ColorPaletteHeader
+        totalColors={Object.values(palette).reduce((count, colors) => count + colors.length, 0)}
+        lockedCount={lockedCount}
+        onAnalyzePalette={onAnalyzePalette}
+        isGenerating={isGenerating}
+      />
 
       {/* Palette Sections */}
       <Card>
@@ -224,7 +218,7 @@ export function PaletteDisplay({
 
               {/* Custom Color Cards */}
               {palette.custom.length > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
                   {palette.custom.map((color, index) => (
                     <ColorCard
                       key={`custom-${index}`}

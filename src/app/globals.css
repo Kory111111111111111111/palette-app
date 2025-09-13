@@ -119,3 +119,18 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  .max-w-8xl {
+    max-width: 88rem; /* 1408px */
+  }
+  
+  /* Custom breakpoint for when tabs start to get cramped */
+  @media (max-width: 1279px) {
+    .responsive-stack {
+      grid-template-columns: 1fr !important;
+    }
+  }
+  
+  
+}
