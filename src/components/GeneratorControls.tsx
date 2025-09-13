@@ -10,7 +10,10 @@ import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sparkles, Image, Palette, Loader2, Upload } from 'lucide-react';
-import { PresetPalette, PRESET_PALETTES, GenerationContext } from '@/types';
+import { PresetPalette, PRESET_PALETTES, GenerationContext, AnalysisQuestion } from '@/types';
+import { ScreenshotAnalysisModal } from '@/components/ScreenshotAnalysisModal';
+import { AIService } from '@/services/ai';
+import { processImage, validateImage, compressImage } from '@/utils/image';
 
 interface GeneratorControlsProps {
   onGenerate: (context: GenerationContext) => Promise<void>;
@@ -18,14 +21,21 @@ interface GeneratorControlsProps {
   lockedColorsCount: number;
   colorCount: number;
   onColorCountChange: (count: number) => void;
+  aiService: AIService | null;
 }
 
-export function GeneratorControls({ onGenerate, isGenerating, lockedColorsCount, colorCount, onColorCountChange }: GeneratorControlsProps) {
+export function GeneratorControls({ onGenerate, isGenerating, lockedColorsCount, colorCount, onColorCountChange, aiService }: GeneratorControlsProps) {
   const [prompt, setPrompt] = useState('');
   const [selectedPresets, setSelectedPresets] = useState<PresetPalette[]>([]);
   const [presetMode, setPresetMode] = useState<'inspired' | 'strict'>('inspired');
   const [screenshot, setScreenshot] = useState<File | null>(null);
   const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
+  
+  // Screenshot analysis state
+  const [analysisModalOpen, setAnalysisModalOpen] = useState(false);
+  const [analysisQuestions, setAnalysisQuestions] = useState<AnalysisQuestion[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
 
   const handlePresetToggle = (preset: PresetPalette) => {
     if (presetMode === 'strict') {
@@ -41,15 +51,53 @@ export function GeneratorControls({ onGenerate, isGenerating, lockedColorsCount,
     }
   };
 
-  const handleScreenshotUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleScreenshotUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('📸 [GeneratorControls] Starting image upload...');
     const file = e.target.files?.[0];
-    if (file) {
+    if (!file) {
+      console.log('📸 [GeneratorControls] No file selected');
+      return;
+    }
+
+    console.log('📸 [GeneratorControls] File selected:', {
+      name: file.name,
+      size: file.size,
+      type: file.type
+    });
+
+    try {
+      console.log('📸 [GeneratorControls] Validating image...');
+      // Validate the image
+      const validation = validateImage(file);
+      console.log('📸 [GeneratorControls] Validation result:', validation);
+      
+      if (!validation.isValid) {
+        console.error('📸 [GeneratorControls] Validation failed:', validation.error);
+        alert(validation.error);
+        return;
+      }
+
+      console.log('📸 [GeneratorControls] Processing image...');
+      // Process and compress the image
+      const imageDataUrl = await processImage(file);
+      console.log('📸 [GeneratorControls] Image processed, length:', imageDataUrl.length);
+      
+      console.log('📸 [GeneratorControls] Compressing image...');
+      const compressedImage = await compressImage(imageDataUrl, {
+        maxWidth: 2048,
+        maxHeight: 2048,
+        quality: 0.8
+      });
+      console.log('📸 [GeneratorControls] Image compressed, length:', compressedImage.length);
+
       setScreenshot(file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setScreenshotPreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+      setScreenshotPreview(compressedImage);
+      setAnalysisError(null);
+      console.log('📸 [GeneratorControls] Image upload completed successfully!');
+    } catch (error) {
+      console.error('📸 [GeneratorControls] Error processing image:', error);
+      console.error('📸 [GeneratorControls] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      alert('Failed to process image. Please try again.');
     }
   };
 
@@ -74,18 +122,83 @@ export function GeneratorControls({ onGenerate, isGenerating, lockedColorsCount,
   };
 
   const handleGenerateScreenshot = async () => {
-    if (!screenshot) return;
+    console.log('🎯 [GeneratorControls] Starting screenshot generation...');
+    console.log('🎯 [GeneratorControls] Screenshot exists:', !!screenshot);
+    console.log('🎯 [GeneratorControls] Screenshot preview exists:', !!screenshotPreview);
+    console.log('🎯 [GeneratorControls] AI service exists:', !!aiService);
     
-    // For now, we'll implement a simplified version
-    // In a real implementation, you'd upload the image and get analysis questions
-    await onGenerate({
-      type: 'screenshot_refined',
-      screenshotAnalysis: {
-        imageData: screenshotPreview || '',
-        answers: {}
-      },
-      colorCount: colorCount
-    });
+    if (!screenshot || !screenshotPreview || !aiService) {
+      if (!aiService) {
+        console.error('🎯 [GeneratorControls] No AI service available');
+        alert('Please configure your API key in settings first.');
+      }
+      return;
+    }
+
+    try {
+      console.log('🎯 [GeneratorControls] Setting up analysis state...');
+      setAnalysisError(null);
+      setIsAnalyzing(true);
+      setAnalysisQuestions([]);
+      setAnalysisModalOpen(true);
+
+      console.log('🎯 [GeneratorControls] Calling AI service...');
+      console.log('🎯 [GeneratorControls] Screenshot preview length:', screenshotPreview.length);
+      
+      // Analyze the image and generate questions
+      const questions = await aiService.analyzeImageAndSuggestQuestions(screenshotPreview);
+      
+      console.log('🎯 [GeneratorControls] AI service returned questions:', questions);
+      console.log('🎯 [GeneratorControls] Questions count:', questions.length);
+      
+      console.log('🎯 [GeneratorControls] Setting questions and stopping analysis...');
+      setAnalysisQuestions(questions);
+      setIsAnalyzing(false);
+      console.log('🎯 [GeneratorControls] Analysis completed successfully!');
+    } catch (error) {
+      console.error('🎯 [GeneratorControls] Error analyzing screenshot:', error);
+      console.error('🎯 [GeneratorControls] Error details:', error instanceof Error ? error.message : 'Unknown error');
+      console.error('🎯 [GeneratorControls] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      
+      setAnalysisError(error instanceof Error ? error.message : 'Failed to analyze screenshot');
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleAnalysisComplete = async (answers: Record<string, string>) => {
+    if (!screenshotPreview) return;
+
+    try {
+      await onGenerate({
+        type: 'screenshot_refined',
+        screenshotAnalysis: {
+          imageData: screenshotPreview,
+          answers: answers
+        },
+        colorCount: colorCount
+      });
+      setAnalysisModalOpen(false);
+    } catch (error) {
+      console.error('Error generating palette:', error);
+      setAnalysisError('Failed to generate palette. Please try again.');
+    }
+  };
+
+  const handleAnalyzeRetry = async () => {
+    if (!screenshotPreview || !aiService) return;
+    
+    try {
+      setAnalysisError(null);
+      setIsAnalyzing(true);
+      setAnalysisQuestions([]);
+
+      const questions = await aiService.analyzeImageAndSuggestQuestions(screenshotPreview);
+      setAnalysisQuestions(questions);
+    } catch (error) {
+      console.error('Error analyzing screenshot:', error);
+      setAnalysisError(error instanceof Error ? error.message : 'Failed to analyze screenshot');
+      setIsAnalyzing(false);
+    }
   };
 
   const presetGroups = PRESET_PALETTES.reduce((groups, preset) => {
@@ -266,6 +379,7 @@ export function GeneratorControls({ onGenerate, isGenerating, lockedColorsCount,
                       className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 transition-colors"
                     >
                       {screenshotPreview ? (
+                        // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={screenshotPreview}
                           alt="Screenshot preview"
@@ -325,6 +439,19 @@ export function GeneratorControls({ onGenerate, isGenerating, lockedColorsCount,
           </CardContent>
         </Card>
       )}
+
+      {/* Screenshot Analysis Modal */}
+      <ScreenshotAnalysisModal
+        open={analysisModalOpen}
+        onOpenChange={setAnalysisModalOpen}
+        questions={analysisQuestions}
+        imagePreview={screenshotPreview || ''}
+        isAnalyzing={isAnalyzing}
+        onAnalyze={handleAnalyzeRetry}
+        onGenerate={handleAnalysisComplete}
+        isGenerating={isGenerating}
+        error={analysisError || undefined}
+      />
     </div>
   );
 }

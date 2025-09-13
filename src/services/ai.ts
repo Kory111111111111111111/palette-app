@@ -105,7 +105,22 @@ export class AIService {
         break;
       
       case 'screenshot_refined':
-        prompt += `Generate a refined UI color palette based on the screenshot analysis and user responses. User wants: ${JSON.stringify(context.screenshotAnalysis?.answers)}`;
+        const answers = context.screenshotAnalysis?.answers || {};
+        const answerText = Object.entries(answers)
+          .map(([key, value]) => `${key}: ${value}`)
+          .join(', ');
+        prompt += `Generate a refined UI color palette based on the screenshot analysis and user responses.
+
+User's preferences from the analysis:
+${answerText}
+
+Consider the uploaded screenshot context and create a palette that:
+1. Addresses the specific needs identified in the analysis
+2. Maintains visual harmony with the existing design elements
+3. Improves upon any accessibility or usability issues
+4. Aligns with the user's stated preferences for mood, audience, and brand personality
+
+Focus on creating a cohesive color system that enhances the existing UI while meeting the user's specific requirements.`;
         break;
     }
 
@@ -128,39 +143,146 @@ export class AIService {
   }
 
   async analyzeImageAndSuggestQuestions(imageData: string): Promise<AnalysisQuestion[]> {
+    console.log('🔍 [AI Service] Starting image analysis...');
+    console.log('🔍 [AI Service] Image data length:', imageData.length);
+    console.log('🔍 [AI Service] Image data type:', typeof imageData);
+    console.log('🔍 [AI Service] Image data starts with:', imageData.substring(0, 50));
+    
     const model = this.genAI.getGenerativeModel({ 
       model: "gemini-2.0-flash-exp"
     });
+    console.log('🔍 [AI Service] Model initialized:', model);
 
     const prompt = `You are a UI/UX consultant analyzing a screenshot of a user interface. Based on this image, generate exactly 5 multiple-choice questions that will help understand the user's goals for creating a new color palette.
 
-Each question should have 3-4 options. Focus on:
-1. Mood/feeling they want to achieve
-2. Target audience
-3. Brand personality
-4. Color preferences
-5. Accessibility needs
+First, analyze the image and identify:
+- The current color scheme and visual style
+- The type of application/website (e.g., e-commerce, dashboard, portfolio)
+- The target audience based on visual cues
+- Any accessibility concerns you notice
+- The overall mood and personality of the design
 
-Return as JSON array with id, question, and options fields.`;
+Then generate exactly 5 multiple-choice questions with 3-4 options each. Focus on:
+1. Mood/feeling they want to achieve (e.g., "What mood should your new palette convey?")
+2. Target audience (e.g., "Who is your primary target audience?")
+3. Brand personality (e.g., "How would you describe your brand personality?")
+4. Color preferences (e.g., "What type of color scheme appeals to you most?")
+5. Accessibility needs (e.g., "How important is accessibility in your design?")
+
+Return as JSON array with this exact structure:
+[
+  {
+    "id": "mood",
+    "question": "What mood should your new palette convey?",
+    "options": ["Professional and trustworthy", "Creative and energetic", "Calm and minimalist", "Bold and modern"]
+  },
+  {
+    "id": "audience", 
+    "question": "Who is your primary target audience?",
+    "options": ["Business professionals", "Young adults", "General consumers", "Tech-savvy users"]
+  },
+  {
+    "id": "personality",
+    "question": "How would you describe your brand personality?",
+    "options": ["Traditional and reliable", "Innovative and cutting-edge", "Friendly and approachable", "Luxury and premium"]
+  },
+  {
+    "id": "colors",
+    "question": "What type of color scheme appeals to you most?",
+    "options": ["Monochromatic with subtle variations", "Complementary colors", "Analogous harmony", "Triadic contrast"]
+  },
+  {
+    "id": "accessibility",
+    "question": "How important is accessibility in your design?",
+    "options": ["Critical - must meet WCAG AAA", "Important - must meet WCAG AA", "Somewhat important", "Not a priority"]
+  }
+]
+
+CRITICAL: Return ONLY valid JSON without any markdown formatting, code blocks, or additional text.`;
 
     try {
+      console.log('🔍 [AI Service] Converting image data...');
+      
+      // Convert base64 data URL to proper format for Gemini
+      const base64Data = imageData.includes(',') ? imageData.split(',')[1] : imageData;
+      const mimeType = imageData.includes('data:') 
+        ? imageData.split(';')[0].split(':')[1] 
+        : 'image/jpeg';
+
+      console.log('🔍 [AI Service] Base64 data length:', base64Data.length);
+      console.log('🔍 [AI Service] MIME type:', mimeType);
+      console.log('🔍 [AI Service] Base64 data starts with:', base64Data.substring(0, 50));
+
+      console.log('🔍 [AI Service] Calling Gemini API...');
+      const startTime = Date.now();
+      
       const result = await model.generateContent([
         prompt,
         {
           inlineData: {
-            data: imageData,
-            mimeType: "image/jpeg"
+            data: base64Data,
+            mimeType: mimeType
           }
         }
       ]);
       
+      const endTime = Date.now();
+      console.log('🔍 [AI Service] API call completed in:', endTime - startTime, 'ms');
+      
+      console.log('🔍 [AI Service] Processing response...');
       const response = await result.response;
+      console.log('🔍 [AI Service] Response object:', response);
+      
       const rawText = response.text();
+      console.log('🔍 [AI Service] Raw response length:', rawText.length);
+      console.log('🔍 [AI Service] Raw response:', rawText);
+      
       const cleanedText = cleanJsonResponse(rawText);
-      return JSON.parse(cleanedText) as AnalysisQuestion[];
+      console.log('🔍 [AI Service] Cleaned response:', cleanedText);
+      
+      console.log('🔍 [AI Service] Parsing JSON...');
+      // Validate the response structure
+      const questions = JSON.parse(cleanedText) as AnalysisQuestion[];
+      console.log('🔍 [AI Service] Parsed questions:', questions);
+      
+      if (!Array.isArray(questions) || questions.length !== 5) {
+        console.error('🔍 [AI Service] Invalid response format: expected exactly 5 questions, got:', questions.length);
+        throw new Error('Invalid response format: expected exactly 5 questions');
+      }
+      
+      console.log('🔍 [AI Service] Validating question structure...');
+      // Validate each question structure
+      questions.forEach((q, index) => {
+        console.log('🔍 [AI Service] Validating question', index, ':', q);
+        if (!q.id || !q.question || !Array.isArray(q.options) || q.options.length < 3) {
+          console.error('🔍 [AI Service] Invalid question structure at index', index, ':', q);
+          throw new Error(`Invalid question structure at index ${index}`);
+        }
+      });
+      
+      console.log('🔍 [AI Service] All questions validated successfully!');
+      return questions;
     } catch (error) {
-      console.error('Error analyzing image:', error);
-      throw new Error('Failed to analyze screenshot');
+      console.error('🔍 [AI Service] Error analyzing image:', error);
+      console.error('🔍 [AI Service] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      
+      if (error instanceof SyntaxError) {
+        console.error('🔍 [AI Service] JSON parsing error');
+        throw new Error('Failed to parse AI response. Please try again.');
+      }
+      
+      if (error instanceof Error && error.message.includes('API_KEY')) {
+        console.error('🔍 [AI Service] API key error');
+        throw new Error('Invalid or missing API key. Please check your settings.');
+      }
+      
+      if (error instanceof Error && error.message.includes('quota')) {
+        console.error('🔍 [AI Service] Quota exceeded');
+        throw new Error('API quota exceeded. Please try again later.');
+      }
+      
+      console.error('🔍 [AI Service] Generic error, rethrowing...');
+      throw new Error('Failed to analyze screenshot. Please check your API key and try again.');
     }
   }
 

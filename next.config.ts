@@ -15,9 +15,9 @@ const nextConfig: NextConfig = {
   basePath,
   assetPrefix: basePath,
   // Ensure proper asset loading
-  experimental: {
-    esmExternals: false,
-  },
+  // experimental: {
+  //   esmExternals: false,
+  // },
 };
 
 export default nextConfig;

@@ -48,18 +48,33 @@ export default function HomePage() {
 
   // Initialize
   useEffect(() => {
+    console.log('🏠 [HomePage] Initializing...');
     const loadedPalettes = StorageService.getSavedPalettes();
     const currentPalette = StorageService.getCurrentPalette();
     
+    console.log('🏠 [HomePage] Loaded palettes:', loadedPalettes.length);
     setSavedPalettes(loadedPalettes);
     
     if (currentPalette) {
+      console.log('🏠 [HomePage] Loading current palette');
       setPalette(currentPalette);
     }
 
     // Initialize AI service if API key is available
+    console.log('🏠 [HomePage] API key available:', !!settings.apiSettings.geminiApiKey);
+    console.log('🏠 [HomePage] API key length:', settings.apiSettings.geminiApiKey?.length || 0);
+    
     if (settings.apiSettings.geminiApiKey) {
-      setAiService(new AIService(settings.apiSettings.geminiApiKey));
+      console.log('🏠 [HomePage] Creating AI service...');
+      try {
+        const aiService = new AIService(settings.apiSettings.geminiApiKey);
+        setAiService(aiService);
+        console.log('🏠 [HomePage] AI service created successfully');
+      } catch (error) {
+        console.error('🏠 [HomePage] Failed to create AI service:', error);
+      }
+    } else {
+      console.log('🏠 [HomePage] No API key available');
     }
   }, [settings.apiSettings.geminiApiKey]);
 
@@ -226,13 +241,14 @@ export default function HomePage() {
             {/* Left Sidebar - Generator Controls */}
             <div className="lg:col-span-1">
               <div className="sticky top-24">
-                <GeneratorControls
-                  onGenerate={handleGenerate}
-                  isGenerating={isGenerating}
-                  lockedColorsCount={lockedColorsCount}
-                  colorCount={colorCount}
-                  onColorCountChange={setColorCount}
-                />
+            <GeneratorControls
+              onGenerate={handleGenerate}
+              isGenerating={isGenerating}
+              lockedColorsCount={lockedColorsCount}
+              colorCount={colorCount}
+              onColorCountChange={setColorCount}
+              aiService={aiService}
+            />
               </div>
             </div>
 

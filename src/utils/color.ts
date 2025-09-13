@@ -87,7 +87,7 @@ export function generateCSSVariables(palette: any, includeLockedOnly: boolean = 
 export function generateFFHex(palette: any, includeLockedOnly: boolean = false): string {
   const colors: string[] = [];
   
-  Object.entries(palette).forEach(([category, colorList]) => {
+  Object.entries(palette).forEach(([, colorList]) => {
     if (Array.isArray(colorList)) {
       colorList.forEach((color) => {
         if (!includeLockedOnly || color.locked) {
@@ -106,7 +106,7 @@ export function generateFFHex(palette: any, includeLockedOnly: boolean = false):
 export function generateSVG(palette: any, includeLockedOnly: boolean = false): string {
   const colors: Array<{hex: string, role: string}> = [];
   
-  Object.entries(palette).forEach(([category, colorList]) => {
+  Object.entries(palette).forEach(([, colorList]) => {
     if (Array.isArray(colorList)) {
       colorList.forEach((color) => {
         if (!includeLockedOnly || color.locked) {
