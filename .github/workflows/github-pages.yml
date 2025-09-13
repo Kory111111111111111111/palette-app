@@ -26,17 +26,22 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '20'
         cache: 'npm'
         
     - name: Install dependencies
       run: npm ci
       
     - name: Build
-      run: npm run build
+      run: npm run build:gh-pages
       
     - name: Verify build output
-      run: ls -la out/
+      run: |
+        ls -la out/
+        echo "Checking for index.html..."
+        ls -la out/index.html
+        echo "Checking asset paths in index.html..."
+        head -20 out/index.html
       
     - name: Setup Pages
       uses: actions/configure-pages@v4
