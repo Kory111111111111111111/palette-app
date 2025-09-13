@@ -80,12 +80,17 @@ export class AIService {
 
     // Add color count instruction
     const colorCount = context.colorCount || 12;
-    prompt += `Generate exactly ${colorCount} colors total across all categories. Distribute them as follows:
+    const lockedColorsCount = context.lockedColors?.length || 0;
+    const newColorsNeeded = colorCount - lockedColorsCount;
+    
+    prompt += `Generate exactly ${colorCount} colors total across all categories (including any locked colors). You need to generate ${newColorsNeeded} NEW colors. Distribute them as follows:
 - Brand Colors: 2-3 colors
 - Surface Colors: 2-3 colors  
 - Text Colors: 2-4 colors
 - Feedback Colors: 3-4 colors
 - Extended Palette: remaining colors to reach ${colorCount} total
+
+CRITICAL: The total count of ALL colors (including locked colors) must equal exactly ${colorCount}. Count locked colors towards the total.
 
 `;
 
@@ -125,8 +130,11 @@ Focus on creating a cohesive color system that enhances the existing UI while me
     }
 
     if (context.lockedColors && context.lockedColors.length > 0) {
-      prompt += `\n\nIMPORTANT: Preserve these locked colors exactly: ${JSON.stringify(context.lockedColors.map(c => ({ hex: c.hex, role: c.role })))}. Generate harmonious colors for all other roles.`;
+      prompt += `\n\nIMPORTANT: Preserve these ${lockedColorsCount} locked colors exactly: ${JSON.stringify(context.lockedColors.map(c => ({ hex: c.hex, role: c.role })))}. These locked colors are already counted in the total of ${colorCount} colors, so you only need to generate ${newColorsNeeded} additional colors to reach the total.`;
     }
+
+    // Final instruction to ensure exact count
+    prompt += `\n\nFINAL VERIFICATION: Before returning your response, count all colors in your JSON response. The total must be exactly ${colorCount} colors. If you have locked colors, include them in your count.`;
 
     let rawText = '';
     try {
@@ -134,7 +142,35 @@ Focus on creating a cohesive color system that enhances the existing UI while me
       const response = await result.response;
       rawText = response.text();
       const cleanedText = cleanJsonResponse(rawText);
-      return JSON.parse(cleanedText) as UIPalette;
+      const palette = JSON.parse(cleanedText) as UIPalette;
+      
+      // Validate color count
+      const totalColors = Object.values(palette).reduce((count, colors) => {
+        return count + (Array.isArray(colors) ? colors.length : 0);
+      }, 0);
+      
+      if (totalColors !== colorCount) {
+        console.warn(`Color count mismatch: expected ${colorCount}, got ${totalColors}. This may be due to AI interpretation of the prompt.`);
+        
+        // Attempt to fix the count by adjusting the extended palette
+        if (totalColors < colorCount && Array.isArray(palette.extended)) {
+          const colorsNeeded = colorCount - totalColors;
+          console.log(`Attempting to add ${colorsNeeded} colors to extended palette to reach target count.`);
+          
+          // Add placeholder colors to extended palette (these will be visible to user as needing adjustment)
+          for (let i = 0; i < colorsNeeded; i++) {
+            palette.extended.push({
+              hex: '#CCCCCC', // Neutral gray placeholder
+              role: `additional_color_${i + 1}`,
+              locked: false,
+              isCustom: false
+            });
+          }
+          console.log(`Added ${colorsNeeded} placeholder colors to reach target count of ${colorCount}.`);
+        }
+      }
+      
+      return palette;
     } catch (error) {
       console.error('Error generating palette:', error);
       console.error('Raw response that failed to parse:', rawText);
