@@ -267,25 +267,25 @@ export const PRESET_PALETTES: PresetPalette[] = [
   {
     name: 'Material Design',
     group: 'Classic',
-    colors: ['#FAFAFA', '#F5F5F5', '#EEEEEE', '#E0E0E0', '#BDBDBD', '#9E9E9E', '#757575', '#616161', '#424242', '#212121', '#E3F2FD', '#BBDEFB', '#90CAF9', '#64B5F6', '#42A5F5', '#2196F3', '#1E88E5', '#1976D2'],
+    colors: ['#F44336', '#2196F3', '#4CAF50', '#FFC107', '#9C27B0', '#FF5722', '#607D8B', '#795548', '#FAFAFA', '#F5F5F5', '#EEEEEE', '#E0E0E0', '#BDBDBD', '#9E9E9E', '#757575', '#616161', '#424242', '#212121'],
     description: 'Google Material Design color system'
   },
   {
     name: 'Ant Design',
     group: 'Classic',
-    colors: ['#FFFFFF', '#FAFAFA', '#F5F5F5', '#F0F0F0', '#D9D9D9', '#BFBFBF', '#8C8C8C', '#595959', '#434343', '#262626', '#1890FF', '#40A9FF', '#69C0FF', '#91D5FF', '#BAE7FF', '#E6F7FF', '#F0F9FF', '#F6FFED'],
+    colors: ['#1890FF', '#F5222D', '#FADB14', '#52C41A', '#722ED1', '#FA8C16', '#13C2C2', '#EB2F96', '#FFFFFF', '#FAFAFA', '#F5F5F5', '#F0F0F0', '#D9D9D9', '#BFBFBF', '#8C8C8C', '#595959', '#434343', '#262626'],
     description: 'Ant Design color palette'
   },
   {
     name: 'Bootstrap',
     group: 'Classic',
-    colors: ['#FFFFFF', '#F8F9FA', '#E9ECEF', '#DEE2E6', '#CED4DA', '#ADB5BD', '#6C757D', '#495057', '#343A40', '#212529', '#0D6EFD', '#0DC0F4', '#6F42C1', '#D63384', '#DC3545', '#FD7E14', '#FFC107', '#198754'],
+    colors: ['#007BFF', '#6C757D', '#28A745', '#DC3545', '#FFC107', '#17A2B8', '#6F42C1', '#E83E8C', '#FFFFFF', '#F8F9FA', '#E9ECEF', '#DEE2E6', '#CED4DA', '#ADB5BD', '#495057', '#343A40', '#212529'],
     description: 'Bootstrap 5 color system'
   },
   {
     name: 'Tailwind',
     group: 'Classic',
-    colors: ['#FFFFFF', '#F8FAFC', '#F1F5F9', '#E2E8F0', '#CBD5E1', '#94A3B8', '#64748B', '#475569', '#334155', '#1E293B', '#0F172A', '#3B82F6', '#8B5CF6', '#EC4899', '#EF4444', '#F59E0B', '#10B981', '#06B6D4'],
+    colors: ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316', '#FFFFFF', '#F8FAFC', '#F1F5F9', '#E2E8F0', '#CBD5E1', '#94A3B8', '#64748B', '#475569', '#334155', '#1E293B', '#0F172A'],
     description: 'Tailwind CSS color palette'
   },
 

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Settings, Palette, Download, Save, Loader2 } from 'lucide-react';
 import { SavedPalette } from '@/types';
+import { AuroraText } from '@/components/magicui/aurora-text';
 
 interface HeaderProps {
   savedPalettes: SavedPalette[];
@@ -44,7 +45,13 @@ export function Header({
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <Palette className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-semibold">Palette Generator</h1>
+            <AuroraText 
+              className="text-xl font-semibold"
+              colors={["#FF0080", "#7928CA", "#0070F3", "#38bdf8", "#FF6B6B", "#4ECDC4"]}
+              speed={1.5}
+            >
+              Palette Generator
+            </AuroraText>
           </div>
         </div>
 
