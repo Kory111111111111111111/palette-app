@@ -7,7 +7,15 @@ const STORAGE_KEYS = {
 } as const;
 
 export class StorageService {
+  private static isClient(): boolean {
+    return typeof window !== 'undefined';
+  }
+
   static savePalette(palette: UIPalette, name: string): SavedPalette {
+    if (!this.isClient()) {
+      throw new Error('StorageService can only be used on the client side');
+    }
+
     const savedPalette: SavedPalette = {
       id: crypto.randomUUID(),
       name,
@@ -30,6 +38,8 @@ export class StorageService {
   }
 
   static getSavedPalettes(): SavedPalette[] {
+    if (!this.isClient()) return [];
+    
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.SAVED_PALETTES);
       if (!stored) return [];
@@ -46,22 +56,30 @@ export class StorageService {
   }
 
   static deletePalette(id: string): void {
+    if (!this.isClient()) return;
+    
     const palettes = this.getSavedPalettes();
     const filtered = palettes.filter(p => p.id !== id);
     localStorage.setItem(STORAGE_KEYS.SAVED_PALETTES, JSON.stringify(filtered));
   }
 
   static loadPalette(id: string): UIPalette | null {
+    if (!this.isClient()) return null;
+    
     const palettes = this.getSavedPalettes();
     const palette = palettes.find(p => p.id === id);
     return palette?.palette || null;
   }
 
   static saveCurrentPalette(palette: UIPalette): void {
+    if (!this.isClient()) return;
+    
     localStorage.setItem(STORAGE_KEYS.CURRENT_PALETTE, JSON.stringify(palette));
   }
 
   static getCurrentPalette(): UIPalette | null {
+    if (!this.isClient()) return null;
+    
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.CURRENT_PALETTE);
       if (!stored) return null;
@@ -73,14 +91,27 @@ export class StorageService {
   }
 
   static clearCurrentPalette(): void {
+    if (!this.isClient()) return;
+    
     localStorage.removeItem(STORAGE_KEYS.CURRENT_PALETTE);
   }
 
   static saveSettings(settings: AppSettings): void {
+    if (!this.isClient()) return;
+    
     localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
   }
 
   static getSettings(): AppSettings {
+    if (!this.isClient()) {
+      return {
+        theme: 'dark',
+        apiSettings: {
+          geminiApiKey: ''
+        }
+      };
+    }
+    
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.SETTINGS);
       if (!stored) {
@@ -104,6 +135,8 @@ export class StorageService {
   }
 
   static updateApiKey(apiKey: string): void {
+    if (!this.isClient()) return;
+    
     const settings = this.getSettings();
     settings.apiSettings.geminiApiKey = apiKey;
     this.saveSettings(settings);
@@ -114,6 +147,8 @@ export class StorageService {
   }
 
   static clearAllData(): void {
+    if (!this.isClient()) return;
+    
     Object.values(STORAGE_KEYS).forEach(key => {
       localStorage.removeItem(key);
     });

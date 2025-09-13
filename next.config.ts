@@ -6,8 +6,12 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true
   },
-  // Remove basePath and assetPrefix for GitHub Pages
-  // GitHub Pages will serve from the root of your repository
+  // Ensure proper static export configuration
+  distDir: 'out',
+  // Disable server-side features that don't work with static export
+  experimental: {
+    esmExternals: false,
+  },
 };
 
 export default nextConfig;

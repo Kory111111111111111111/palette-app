@@ -21,15 +21,19 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   // Load settings from localStorage on mount
   useEffect(() => {
-    const loadedSettings = StorageService.getSettings();
-    setSettings(loadedSettings);
+    if (typeof window !== 'undefined') {
+      const loadedSettings = StorageService.getSettings();
+      setSettings(loadedSettings);
+    }
   }, []);
 
   // Apply theme to document
   useEffect(() => {
-    const root = document.documentElement;
-    root.classList.remove('light', 'dark');
-    root.classList.add(settings.theme);
+    if (typeof window !== 'undefined') {
+      const root = document.documentElement;
+      root.classList.remove('light', 'dark');
+      root.classList.add(settings.theme);
+    }
   }, [settings.theme]);
 
   const setTheme = (theme: 'light' | 'dark') => {
