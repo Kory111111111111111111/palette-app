@@ -12,6 +12,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sparkles, Image, Palette, Loader2, Upload } from 'lucide-react';
 import { PresetPalette, PRESET_PALETTES, GenerationContext, AnalysisQuestion, SavedPalette } from '@/types';
 import { ScreenshotAnalysisModal } from '@/components/ScreenshotAnalysisModal';
+import { QuickHarmonyPanel } from '@/components/QuickHarmonyPanel';
 import { AIService } from '@/services/ai';
 import { processImage, validateImage, compressImage } from '@/utils/image';
 
@@ -25,9 +26,10 @@ interface GeneratorControlsProps {
   savedPalettes: SavedPalette[];
   onLoadPalette: (palette: SavedPalette) => void;
   onDeletePalette: (id: string) => void;
+  palette: any; // UIPalette
 }
 
-export function GeneratorControls({ onGenerate, isGenerating, lockedColorsCount, colorCount, onColorCountChange, aiService, savedPalettes, onLoadPalette, onDeletePalette }: GeneratorControlsProps) {
+export function GeneratorControls({ onGenerate, isGenerating, lockedColorsCount, colorCount, onColorCountChange, aiService, savedPalettes, onLoadPalette, onDeletePalette, palette }: GeneratorControlsProps) {
   const [prompt, setPrompt] = useState('');
   const [selectedPresets, setSelectedPresets] = useState<PresetPalette[]>([]);
   const [presetMode, setPresetMode] = useState<'inspired' | 'strict'>('inspired');
@@ -495,6 +497,13 @@ export function GeneratorControls({ onGenerate, isGenerating, lockedColorsCount,
           </CardContent>
         </Card>
       )}
+
+      {/* Quick Harmony Panel */}
+      <QuickHarmonyPanel
+        palette={palette}
+        onGenerateWithHarmony={onGenerate}
+        isGenerating={isGenerating}
+      />
 
       {/* Screenshot Analysis Modal */}
       <ScreenshotAnalysisModal

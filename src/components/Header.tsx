@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Settings, Palette, Download, Save, Loader2 } from 'lucide-react';
+import { Settings, Palette, Download, Save, Loader2, ArrowLeftRight } from 'lucide-react';
 import { SavedPalette } from '@/types';
 import { AuroraText } from '@/components/magicui/aurora-text';
 
@@ -14,6 +14,7 @@ interface HeaderProps {
   onSavePalette: () => void;
   onExportPalette: () => void;
   onOpenSettings: () => void;
+  onStartComparison: () => void;
   isGenerating: boolean;
   canSave: boolean;
 }
@@ -25,6 +26,7 @@ export function Header({
   onSavePalette,
   onExportPalette,
   onOpenSettings,
+  onStartComparison,
   isGenerating,
   canSave
 }: HeaderProps) {
@@ -128,6 +130,17 @@ export function Header({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {/* Comparison Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onStartComparison}
+            disabled={savedPalettes.length === 0}
+          >
+            <ArrowLeftRight className="h-4 w-4 mr-2" />
+            Compare
+          </Button>
 
           {/* Save Button */}
           <Button

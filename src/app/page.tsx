@@ -6,12 +6,15 @@ import { GeneratorControls } from '@/components/GeneratorControls';
 import { PaletteDisplay } from '@/components/PaletteDisplay';
 import { SettingsPanel } from '@/components/SettingsPanel';
 import { AnalysisModal } from '@/components/AnalysisModal';
+import { PaletteComparison } from '@/components/PaletteComparison';
+import { EnhancedColorHarmonySuggestions } from '@/components/EnhancedColorHarmonySuggestions';
+import { ComparisonPaletteSelector } from '@/components/ComparisonPaletteSelector';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Toaster } from '@/components/ui/sonner';
-import { FileText, Code, Gamepad2 } from 'lucide-react';
+import { FileText, Code, Gamepad2, ArrowLeftRight, Sparkles } from 'lucide-react';
 import { UIPalette, Color, SavedPalette, GenerationContext } from '@/types';
 import { AIService } from '@/services/ai';
 import { StorageService } from '@/services/storage';
@@ -45,6 +48,14 @@ export default function HomePage() {
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [saveName, setSaveName] = useState('');
   const [exportModalOpen, setExportModalOpen] = useState(false);
+  
+  // Comparison mode
+  const [comparisonMode, setComparisonMode] = useState(false);
+  const [comparisonPalette, setComparisonPalette] = useState<UIPalette | null>(null);
+  const [comparisonSelectorOpen, setComparisonSelectorOpen] = useState(false);
+  
+  // Harmony suggestions
+  const [showHarmonySuggestions, setShowHarmonySuggestions] = useState(false);
 
   // Initialize
   useEffect(() => {
@@ -210,6 +221,53 @@ export default function HomePage() {
     setExportModalOpen(false);
   };
 
+  const handleStartComparison = () => {
+    if (savedPalettes.length === 0) {
+      alert('No saved palettes available for comparison. Please save a palette first.');
+      return;
+    }
+    setComparisonSelectorOpen(true);
+  };
+
+  const handleSelectComparisonPalette = (savedPalette: SavedPalette) => {
+    setComparisonPalette(savedPalette.palette);
+    setComparisonMode(true);
+    setComparisonSelectorOpen(false);
+  };
+
+  const handleCloseComparison = () => {
+    setComparisonMode(false);
+    setComparisonPalette(null);
+  };
+
+  const handleExportComparison = (format: 'svg' | 'css' | 'ff_hex') => {
+    if (!comparisonPalette) return;
+    
+    // Export both palettes
+    const primaryContent = format === 'svg' ? generateSVG(palette) : 
+                          format === 'css' ? generateCSSVariables(palette) : 
+                          generateFFHex(palette);
+    const secondaryContent = format === 'svg' ? generateSVG(comparisonPalette) : 
+                            format === 'css' ? generateCSSVariables(comparisonPalette) : 
+                            generateFFHex(comparisonPalette);
+    
+    const combinedContent = `=== PRIMARY PALETTE ===\n${primaryContent}\n\n=== COMPARISON PALETTE ===\n${secondaryContent}`;
+    
+    const filename = `palette-comparison.${format === 'svg' ? 'svg' : format === 'css' ? 'css' : 'txt'}`;
+    const mimeType = format === 'svg' ? 'image/svg+xml' : format === 'css' ? 'text/css' : 'text/plain';
+    
+    downloadFile(combinedContent, filename, mimeType);
+  };
+
+  const handleApplyHarmonySuggestion = (suggestion: UIPalette) => {
+    setPalette(suggestion);
+    setShowHarmonySuggestions(false);
+  };
+
+  const handleGenerateWithHarmony = async (context: GenerationContext) => {
+    await handleGenerate(context);
+  };
+
   const lockedColorsCount = Object.values(palette).reduce(
     (count, colors) => count + colors.filter((c: Color) => c.locked).length,
     0
@@ -232,43 +290,111 @@ export default function HomePage() {
           onSavePalette={() => setSaveModalOpen(true)}
           onExportPalette={() => setExportModalOpen(true)}
           onOpenSettings={() => setSettingsOpen(true)}
+          onStartComparison={handleStartComparison}
           isGenerating={isGenerating}
           canSave={canSave}
         />
 
         <main className="w-full px-4 py-8">
           <div className="max-w-8xl mx-auto">
-            <div className="grid grid-cols-1 xl:grid-cols-5 responsive-stack gap-8">
-              {/* Left Sidebar - Generator Controls */}
-              <div className="xl:col-span-2">
-                <div className="sticky top-24">
-                  <GeneratorControls
-                    onGenerate={handleGenerate}
-                    isGenerating={isGenerating}
-                    lockedColorsCount={lockedColorsCount}
-                    colorCount={colorCount}
-                    onColorCountChange={setColorCount}
-                    aiService={aiService}
-                    savedPalettes={savedPalettes}
-                    onLoadPalette={handleLoadPalette}
-                    onDeletePalette={handleDeletePalette}
+            {comparisonMode ? (
+              /* Comparison Mode */
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h1 className="text-2xl font-bold">Palette Comparison</h1>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowHarmonySuggestions(!showHarmonySuggestions)}
+                    >
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      {showHarmonySuggestions ? 'Hide' : 'Show'} Harmony
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={handleCloseComparison}
+                    >
+                      Exit Comparison
+                    </Button>
+                  </div>
+                </div>
+                
+                {comparisonPalette && (
+                  <PaletteComparison
+                    primaryPalette={palette}
+                    secondaryPalette={comparisonPalette}
+                    onClose={handleCloseComparison}
+                    onExportComparison={handleExportComparison}
                   />
+                )}
+                
+                {showHarmonySuggestions && (
+                  <EnhancedColorHarmonySuggestions
+                    palette={palette}
+                    onApplySuggestion={handleApplyHarmonySuggestion}
+                    onGenerateWithHarmony={handleGenerateWithHarmony}
+                    isGenerating={isGenerating}
+                  />
+                )}
+              </div>
+            ) : (
+              /* Normal Mode */
+              <div className="grid grid-cols-1 xl:grid-cols-5 responsive-stack gap-8">
+                {/* Left Sidebar - Generator Controls */}
+                <div className="xl:col-span-2">
+                  <div className="sticky top-24 space-y-6">
+                    <GeneratorControls
+                      onGenerate={handleGenerate}
+                      isGenerating={isGenerating}
+                      lockedColorsCount={lockedColorsCount}
+                      colorCount={colorCount}
+                      onColorCountChange={setColorCount}
+                      aiService={aiService}
+                      savedPalettes={savedPalettes}
+                      onLoadPalette={handleLoadPalette}
+                      onDeletePalette={handleDeletePalette}
+                      palette={palette}
+                    />
+                    
+                    {/* Enhanced Harmony Suggestions */}
+                    <EnhancedColorHarmonySuggestions
+                      palette={palette}
+                      onApplySuggestion={handleApplyHarmonySuggestion}
+                      onGenerateWithHarmony={handleGenerateWithHarmony}
+                      isGenerating={isGenerating}
+                    />
+                  </div>
+                </div>
+
+                {/* Main Content - Palette Display */}
+                <div className="xl:col-span-3">
+                  <div className="space-y-6">
+                    <PaletteDisplay
+                      palette={palette}
+                      onColorChange={handleColorChange}
+                      onLockToggle={handleLockToggle}
+                      onRemoveColor={handleRemoveColor}
+                      onAddCustomColor={handleAddCustomColor}
+                      onAnalyzePalette={() => setAnalysisOpen(true)}
+                      isGenerating={isGenerating}
+                    />
+                    
+                    {/* Comparison Button */}
+                    <div className="flex justify-center">
+                      <Button
+                        variant="outline"
+                        onClick={handleStartComparison}
+                        className="flex items-center gap-2"
+                        disabled={savedPalettes.length === 0}
+                      >
+                        <ArrowLeftRight className="h-4 w-4" />
+                        Compare with Saved Palette
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </div>
-
-              {/* Main Content - Palette Display */}
-              <div className="xl:col-span-3">
-                <PaletteDisplay
-                  palette={palette}
-                  onColorChange={handleColorChange}
-                  onLockToggle={handleLockToggle}
-                  onRemoveColor={handleRemoveColor}
-                  onAddCustomColor={handleAddCustomColor}
-                  onAnalyzePalette={() => setAnalysisOpen(true)}
-                  isGenerating={isGenerating}
-                />
-              </div>
-            </div>
+            )}
           </div>
         </main>
       </div>
@@ -387,6 +513,15 @@ export default function HomePage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Comparison Palette Selector */}
+      <ComparisonPaletteSelector
+        open={comparisonSelectorOpen}
+        onOpenChange={setComparisonSelectorOpen}
+        savedPalettes={savedPalettes}
+        onSelectPalette={handleSelectComparisonPalette}
+        currentPalette={palette}
+      />
 
       <Toaster />
     </StarsBackground>
