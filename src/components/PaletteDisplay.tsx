@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,13 +33,26 @@ export function PaletteDisplay({
 }: PaletteDisplayProps) {
   const [customColorInput, setCustomColorInput] = useState('');
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-    brand: true,
-    surface: true,
-    text: true,
-    feedback: true,
-    extended: true,
-    custom: true
+    brand: true,      // Core Brand - always start open
+    surface: false,   // Background & Surface - conditional
+    text: false,      // Text & Borders - conditional
+    feedback: false,  // Feedback System - conditional
+    extended: false,  // Extended Palette - start closed
+    custom: true      // Custom Colors - always start open
   });
+
+  // Initialize sections based on palette content
+  useEffect(() => {
+    setOpenSections(prev => ({
+      ...prev,
+      brand: true, // Always start open
+      surface: prev.surface || palette.surface.length > 0, // Open if has colors
+      text: prev.text || palette.text.length > 0, // Open if has colors
+      feedback: prev.feedback || palette.feedback.length > 0, // Open if has colors
+      extended: false, // Always start closed
+      custom: true // Always start open
+    }));
+  }, [palette.surface.length, palette.text.length, palette.feedback.length]);
 
   const handleAddCustomColor = () => {
     const normalized = normalizeHex(customColorInput);
@@ -127,41 +140,46 @@ export function PaletteDisplay({
         isGenerating={isGenerating}
       />
 
-      {/* Palette Sections */}
+      {/* Palette Sections - Organized by System */}
       <Card>
+        {/* Core Brand System */}
         {renderColorSection(
-          'Brand Colors',
+          '🎨 Core Brand',
           palette.brand,
           'brand',
           'Primary brand colors for logos, buttons, and key UI elements'
         )}
-        
+
+        {/* Interface System - Background & Surface */}
         {renderColorSection(
-          'Surface Colors',
+          '🖥️ Background & Surface',
           palette.surface,
           'surface',
           'Background colors for cards, panels, and elevated surfaces'
         )}
-        
+
+        {/* Interface System - Text & Borders */}
         {renderColorSection(
-          'Text & Border Colors',
+          '📝 Text & Borders',
           palette.text,
           'text',
           'Text colors and border colors with proper contrast ratios'
         )}
-        
+
+        {/* Feedback System */}
         {renderColorSection(
-          'Feedback Colors',
+          '💬 Feedback System',
           palette.feedback,
           'feedback',
           'Success, warning, error, and info state colors'
         )}
-        
+
+        {/* Extended Palette */}
         {renderColorSection(
-          'Extended Palette',
+          '🎯 Extended Palette',
           palette.extended,
           'extended',
-          'Additional colors for special use cases'
+          'Additional colors for special use cases and advanced styling'
         )}
 
         {/* Custom Colors Section */}

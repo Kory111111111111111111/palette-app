@@ -5,16 +5,18 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Sparkles, Image, Palette, Loader2, Upload, FileText } from 'lucide-react';
+import { Sparkles, Image, Palette, Loader2, Upload, FileText, Settings } from 'lucide-react';
 import { PresetPalette, PRESET_PALETTES, GenerationContext, AnalysisQuestion, SavedPalette } from '@/types';
 import { ScreenshotAnalysisModal } from '@/components/ScreenshotAnalysisModal';
 import { QuickHarmonyPanel } from '@/components/QuickHarmonyPanel';
 import { AIService } from '@/services/ai';
 import { processImage, validateImage, compressImage } from '@/utils/image';
+import { useUserJourney } from '@/contexts/UserJourneyContext';
 
 interface GeneratorControlsProps {
   onGenerate: (context: GenerationContext) => Promise<void>;
@@ -30,6 +32,9 @@ interface GeneratorControlsProps {
 }
 
 export function GeneratorControls({ onGenerate, isGenerating, lockedColorsCount, colorCount, onColorCountChange, aiService, savedPalettes, onLoadPalette, onDeletePalette, palette }: GeneratorControlsProps) {
+  const { shouldShowAdvancedFeatures, incrementCounter } = useUserJourney();
+
+  const [generationMethod, setGenerationMethod] = useState<'quick' | 'prompt' | 'preset' | 'screenshot'>('quick');
   const [prompt, setPrompt] = useState('');
   const [selectedPresets, setSelectedPresets] = useState<PresetPalette[]>([]);
   const [presetMode, setPresetMode] = useState<'inspired' | 'strict'>('inspired');
@@ -107,6 +112,8 @@ export function GeneratorControls({ onGenerate, isGenerating, lockedColorsCount,
   };
 
   const handleQuickGenerate = async (type: 'brand' | 'ui' | 'web') => {
+    incrementCounter('generationsCount');
+
     if (!aiService) {
       // For demo mode, we'll use a special context that the main page can handle
       await onGenerate({
@@ -139,6 +146,7 @@ export function GeneratorControls({ onGenerate, isGenerating, lockedColorsCount,
   const handleGeneratePrompt = async () => {
     if (!prompt.trim()) return;
 
+    incrementCounter('generationsCount');
     await onGenerate({
       type: 'prompt',
       prompt: prompt.trim(),
@@ -149,6 +157,7 @@ export function GeneratorControls({ onGenerate, isGenerating, lockedColorsCount,
   const handleGeneratePreset = async () => {
     if (selectedPresets.length === 0) return;
     
+    incrementCounter('generationsCount');
     await onGenerate({
       type: presetMode === 'inspired' ? 'preset_inspired' : 'preset_strict',
       presetPalettes: selectedPresets,
@@ -246,7 +255,147 @@ export function GeneratorControls({ onGenerate, isGenerating, lockedColorsCount,
 
   return (
     <div className="w-full space-y-6">
-      {/* Quick Generate Section */}
+      {/* Generation Method Selection */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            How would you like to generate colors?
+          </CardTitle>
+          <CardDescription>
+            Choose your preferred method to create the perfect palette
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <RadioGroup
+            value={generationMethod}
+            onValueChange={(value) => setGenerationMethod(value as typeof generationMethod)}
+            className="grid grid-cols-2 gap-4"
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="quick" id="quick" />
+              <Label htmlFor="quick" className="flex items-center gap-2 cursor-pointer">
+                <Sparkles className="h-4 w-4" />
+                <div>
+                  <div className="font-medium">Quick Start</div>
+                  <div className="text-sm text-muted-foreground">Smart defaults for common needs</div>
+                </div>
+              </Label>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="prompt" id="prompt" />
+              <Label htmlFor="prompt" className="flex items-center gap-2 cursor-pointer">
+                <FileText className="h-4 w-4" />
+                <div>
+                  <div className="font-medium">Describe It</div>
+                  <div className="text-sm text-muted-foreground">Tell us what you need</div>
+                </div>
+              </Label>
+            </div>
+
+            {shouldShowAdvancedFeatures() && (
+              <>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="preset" id="preset" />
+                  <Label htmlFor="preset" className="flex items-center gap-2 cursor-pointer">
+                    <Palette className="h-4 w-4" />
+                    <div>
+                      <div className="font-medium">From Presets</div>
+                      <div className="text-sm text-muted-foreground">Inspired by existing palettes</div>
+                    </div>
+                  </Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="screenshot" id="screenshot" />
+                  <Label htmlFor="screenshot" className="flex items-center gap-2 cursor-pointer">
+                    <Image className="h-4 w-4" />
+                    <div>
+                      <div className="font-medium">From Image</div>
+                      <div className="text-sm text-muted-foreground">Extract colors from photos</div>
+                    </div>
+                  </Label>
+                </div>
+              </>
+            )}
+          </RadioGroup>
+        </CardContent>
+      </Card>
+
+
+      {generationMethod === 'prompt' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Describe your ideal palette</CardTitle>
+            <CardDescription>
+              Tell us about your project, brand, or the mood you&apos;re going for
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="prompt">What kind of colors do you need?</Label>
+              <Textarea
+                id="prompt"
+                placeholder="e.g., A vibrant retro arcade game, A serene minimalist yoga studio, A modern tech startup..."
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                rows={3}
+              />
+            </div>
+
+            <div className="flex justify-between items-center">
+              <Button
+                onClick={handleGeneratePrompt}
+                disabled={!prompt.trim() || isGenerating}
+                className="flex items-center gap-2"
+              >
+                {isGenerating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+                Generate from Description
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Advanced Options */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Settings className="h-5 w-5" />
+            Advanced Options
+          </CardTitle>
+          <CardDescription>
+            Fine-tune your palette generation settings
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Color Count Slider */}
+          <div className="space-y-2">
+            <Label>Number of Colors: {colorCount}</Label>
+            <Slider
+              value={[colorCount]}
+              onValueChange={(value) => onColorCountChange(value[0])}
+              min={6}
+              max={35}
+              step={1}
+              className="w-full"
+            />
+            <div className="flex justify-between text-xs text-muted-foreground px-2">
+              <span>Minimal (6)</span>
+              <span>Balanced (12)</span>
+              <span>Rich (20)</span>
+              <span>Extended (35)</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Legacy Quick Generate Section - Remove after testing */}
       <Card className="border-primary/20">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

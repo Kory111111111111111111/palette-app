@@ -108,10 +108,14 @@ export class StorageService {
         theme: 'dark',
         apiSettings: {
           geminiApiKey: ''
+        },
+        accessibility: {
+          animationsEnabled: true,
+          prefersReducedMotion: false
         }
       };
     }
-    
+
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.SETTINGS);
       if (!stored) {
@@ -119,16 +123,34 @@ export class StorageService {
           theme: 'dark',
           apiSettings: {
             geminiApiKey: ''
+          },
+          accessibility: {
+            animationsEnabled: true,
+            prefersReducedMotion: false
           }
         };
       }
-      return JSON.parse(stored) as AppSettings;
+      const parsedSettings = JSON.parse(stored) as AppSettings;
+
+      // Ensure accessibility settings exist (for backwards compatibility)
+      if (!parsedSettings.accessibility) {
+        parsedSettings.accessibility = {
+          animationsEnabled: true,
+          prefersReducedMotion: false
+        };
+      }
+
+      return parsedSettings;
     } catch (error) {
       console.error('Error loading settings:', error);
       return {
         theme: 'dark',
         apiSettings: {
           geminiApiKey: ''
+        },
+        accessibility: {
+          animationsEnabled: true,
+          prefersReducedMotion: false
         }
       };
     }
@@ -154,3 +176,4 @@ export class StorageService {
     });
   }
 }
+

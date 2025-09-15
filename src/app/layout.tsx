@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { UserJourneyProvider } from "@/contexts/UserJourneyContext";
+import { ModalQueueProvider } from "@/contexts/ModalQueueContext";
 
 export const metadata: Metadata = {
   title: "Palette Generator - AI-Powered Color Palette Creator",
@@ -23,7 +25,11 @@ export default function RootLayout({
     <html lang="en">
       <body className="font-sans antialiased">
         <ThemeProvider>
-          {children}
+          <UserJourneyProvider>
+            <ModalQueueProvider>
+              {children}
+            </ModalQueueProvider>
+          </UserJourneyProvider>
         </ThemeProvider>
       </body>
     </html>

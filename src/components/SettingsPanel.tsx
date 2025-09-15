@@ -65,6 +65,29 @@ export function SettingsPanel({
     // We'll handle this in the main component
   };
 
+  const handleAnimationsToggle = (checked: boolean) => {
+    const newSettings: AppSettings = {
+      ...settings,
+      accessibility: {
+        ...settings.accessibility,
+        animationsEnabled: checked
+      }
+    };
+    setSettings(newSettings);
+  };
+
+  const handleReducedMotionToggle = (checked: boolean) => {
+    const newSettings: AppSettings = {
+      ...settings,
+      accessibility: {
+        ...settings.accessibility,
+        prefersReducedMotion: checked
+      }
+    };
+    setSettings(newSettings);
+  };
+
+
   const handleClearAllData = () => {
     if (confirm('Are you sure you want to clear all data? This will delete all saved palettes and settings.')) {
       StorageService.clearAllData();
@@ -216,6 +239,48 @@ export function SettingsPanel({
                   disabled={!!settings.apiSettings.geminiApiKey}
                 />
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Accessibility & Performance */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                Accessibility & Performance
+              </CardTitle>
+              <CardDescription>
+                Customize animations and background effects
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Animations */}
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Enable Animations</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Background animations and transitions
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.accessibility?.animationsEnabled ?? true}
+                  onCheckedChange={handleAnimationsToggle}
+                />
+              </div>
+
+              {/* Reduced Motion */}
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Prefer Reduced Motion</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Minimize animations for accessibility
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.accessibility?.prefersReducedMotion ?? false}
+                  onCheckedChange={handleReducedMotionToggle}
+                />
+              </div>
+
             </CardContent>
           </Card>
 

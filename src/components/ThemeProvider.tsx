@@ -16,7 +16,11 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<AppSettings>({
     theme: 'dark',
-    apiSettings: { geminiApiKey: '' }
+    apiSettings: { geminiApiKey: '' },
+    accessibility: {
+      animationsEnabled: true,
+      prefersReducedMotion: false
+    }
   });
 
   // Load settings from localStorage on mount

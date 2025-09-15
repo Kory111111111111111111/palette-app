@@ -1,24 +1,16 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Slider } from '@/components/ui/slider';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { 
-  Sparkles, 
-  Palette, 
-  RefreshCw, 
-  Check, 
-  Eye, 
-  Settings, 
-  Wand2, 
-  Lightbulb,
+import {
+  Sparkles,
+  Palette,
+  RefreshCw,
+  Check,
+  Wand2,
 } from 'lucide-react';
-import { ColorCard } from './ColorCard';
 import { UIPalette, Color, GenerationContext } from '@/types';
 import { 
   ColorHarmonyType, 
@@ -68,9 +60,8 @@ export function EnhancedColorHarmonySuggestions({
 }: EnhancedColorHarmonySuggestionsProps) {
   const [suggestions, setSuggestions] = useState<HarmonySuggestion[]>([]);
   const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
-  const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(null);
-  const [showSettings, setShowSettings] = useState(false);
-  const [previewMode, setPreviewMode] = useState(false);
+  const [showAllSuggestions, setShowAllSuggestions] = useState(false);
+  const [appliedSuggestion, setAppliedSuggestion] = useState<string | null>(null);
   const [settings, setSettings] = useState<HarmonySettings>({
     includeShades: true,
     includeTints: true,
@@ -80,28 +71,33 @@ export function EnhancedColorHarmonySuggestions({
     harmonyTypes: ['complementary', 'analogous', 'triadic', 'tetradic', 'splitComplementary']
   });
 
-  // Get locked colors for harmony analysis
-  const lockedColors = Object.values(palette).flat().filter(color => color.locked);
-  
-  // Analyze existing palette for better suggestions
+  // Get locked colors for harmony analysis - memoized for performance
+  const lockedColors = useMemo(() =>
+    Object.values(palette).flat().filter(color => color.locked),
+    [palette]
+  );
+
+  // Analyze existing palette for better suggestions - expensive computation, memoized
   const paletteAnalysis = useMemo(() => {
     const allColors = Object.values(palette).flat();
+    if (allColors.length === 0) return null;
+
     const hexColors = allColors.map(color => color.hex);
-    
+
     const avgSaturation = allColors.reduce((sum, color) => {
       const hsl = hexToHsl(color.hex);
       return sum + (hsl?.s || 0);
     }, 0) / allColors.length;
-    
+
     const avgLightness = allColors.reduce((sum, color) => {
       const hsl = hexToHsl(color.hex);
       return sum + (hsl?.l || 0);
     }, 0) / allColors.length;
-    
+
     // Use advanced color theory analysis
     const harmonyAnalysis = calculatePaletteHarmonyScore(hexColors);
     const colorPsychologies = hexColors.map(hex => analyzeColorPsychology(hex));
-    
+
     return {
       avgSaturation: Math.round(avgSaturation),
       avgLightness: Math.round(avgLightness),
@@ -239,12 +235,12 @@ export function EnhancedColorHarmonySuggestions({
 
   const generateSurfaceColors = (baseHex: string, analysis: typeof paletteAnalysis): Color[] => {
     const hsl = hexToHsl(baseHex);
-    if (!hsl) return [];
-    
+    if (!hsl || !analysis) return [];
+
     // Generate surface colors with appropriate lightness
     const surfaceLightness = analysis.avgLightness > 50 ? 95 : 15; // Light or dark theme
     const surfaceHex = hslToHex({ ...hsl, l: surfaceLightness });
-    
+
     return [
       { hex: surfaceHex, role: 'Background', locked: false, isCustom: false },
       { hex: adjustColorLightness(surfaceHex, -10), role: 'Surface', locked: false, isCustom: false }
@@ -253,12 +249,12 @@ export function EnhancedColorHarmonySuggestions({
 
   const generateTextColors = (baseHex: string, analysis: typeof paletteAnalysis): Color[] => {
     const hsl = hexToHsl(baseHex);
-    if (!hsl) return [];
-    
+    if (!hsl || !analysis) return [];
+
     // Generate text colors with high contrast
     const textLightness = analysis.avgLightness > 50 ? 10 : 90;
     const textHex = hslToHex({ ...hsl, l: textLightness });
-    
+
     return [
       { hex: textHex, role: 'Text Primary', locked: false, isCustom: false },
       { hex: adjustColorLightness(textHex, 20), role: 'Text Secondary', locked: false, isCustom: false }
@@ -304,7 +300,7 @@ export function EnhancedColorHarmonySuggestions({
     
     // Saturation match
     const baseHsl = hexToHsl(baseColor.hex);
-    if (baseHsl) {
+    if (baseHsl && analysis) {
       const saturationDiff = Math.abs(baseHsl.s - analysis.avgSaturation);
       confidence += (100 - saturationDiff) / 100 * 0.15;
     }
@@ -350,21 +346,24 @@ export function EnhancedColorHarmonySuggestions({
     
     if (confidence > 0.8) reasons.push('High color harmony match');
     if (accessibilityScore > 0.7) reasons.push('Good accessibility');
-    if (analysis.avgSaturation > 70) reasons.push('Vibrant color scheme');
-    if (analysis.avgLightness > 60) reasons.push('Light theme friendly');
-    
-    // Add color theory insights
-    if (analysis.harmonyScore > 0.7) {
-      reasons.push('Strong color theory foundation');
-    }
-    if (analysis.strengths.length > 0) {
-      reasons.push(`Strengths: ${analysis.strengths.slice(0, 2).join(', ')}`);
-    }
-    
-    // Add emotional impact insights
-    const uniqueEmotions = [...new Set(analysis.dominantEmotions)];
-    if (uniqueEmotions.length > 0) {
-      reasons.push(`Emotional impact: ${uniqueEmotions.slice(0, 2).join(', ')}`);
+
+    if (analysis) {
+      if (analysis.avgSaturation > 70) reasons.push('Vibrant color scheme');
+      if (analysis.avgLightness > 60) reasons.push('Light theme friendly');
+
+      // Add color theory insights
+      if (analysis.harmonyScore > 0.7) {
+        reasons.push('Strong color theory foundation');
+      }
+      if (analysis.strengths.length > 0) {
+        reasons.push(`Strengths: ${analysis.strengths.slice(0, 2).join(', ')}`);
+      }
+
+      // Add emotional impact insights
+      const uniqueEmotions = [...new Set(analysis.dominantEmotions)];
+      if (uniqueEmotions.length > 0) {
+        reasons.push(`Emotional impact: ${uniqueEmotions.slice(0, 2).join(', ')}`);
+      }
     }
     
     switch (type) {
@@ -429,7 +428,7 @@ export function EnhancedColorHarmonySuggestions({
 
   const handleApplySuggestion = (suggestion: HarmonySuggestion) => {
     onApplySuggestion(suggestion.preview);
-    setSelectedSuggestion(suggestion.id);
+    setAppliedSuggestion(suggestion.id);
   };
 
   const handleGenerateWithHarmony = (suggestion: HarmonySuggestion) => {
@@ -438,21 +437,22 @@ export function EnhancedColorHarmonySuggestions({
       ...color,
       locked: true
     }));
-    
+
     const context: GenerationContext = {
       type: 'prompt',
       prompt: `Generate a complete UI palette using these harmony colors: ${suggestion.name}. ${suggestion.reasoning}`,
       lockedColors: lockedHarmonyColors,
       colorCount: settings.maxColors
     };
-    
+
     onGenerateWithHarmony(context);
-    setSelectedSuggestion(suggestion.id);
+    setAppliedSuggestion(suggestion.id);
   };
 
   const handleRegenerate = () => {
     setSuggestions([]);
-    setSelectedSuggestion(null);
+    setAppliedSuggestion(null);
+    setShowAllSuggestions(false);
     generateSuggestions();
   };
 
@@ -477,7 +477,7 @@ export function EnhancedColorHarmonySuggestions({
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
-            <Lightbulb className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <Palette className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <p className="text-muted-foreground mb-4">
               Lock colors to see AI-powered harmony suggestions based on color theory
             </p>
@@ -506,85 +506,18 @@ export function EnhancedColorHarmonySuggestions({
               AI-powered suggestions with complete palette generation
             </CardDescription>
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowSettings(!showSettings)}
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRegenerate}
-              disabled={isGeneratingSuggestions}
-            >
-              <RefreshCw className={cn("h-4 w-4 mr-2", isGeneratingSuggestions && "animate-spin")} />
-              Regenerate
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRegenerate}
+            disabled={isGeneratingSuggestions}
+          >
+            <RefreshCw className={cn("h-4 w-4 mr-2", isGeneratingSuggestions && "animate-spin")} />
+            Regenerate
+          </Button>
         </div>
       </CardHeader>
       
-      {showSettings && (
-        <CardContent className="border-t">
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Max Colors</Label>
-                <Slider
-                  value={[settings.maxColors]}
-                  onValueChange={([value]) => setSettings(prev => ({ ...prev, maxColors: value }))}
-                  min={6}
-                  max={20}
-                  step={1}
-                  className="w-full"
-                />
-                <p className="text-xs text-muted-foreground">{settings.maxColors} colors</p>
-              </div>
-              <div className="space-y-2">
-                <Label>Min Contrast</Label>
-                <Slider
-                  value={[settings.minContrast]}
-                  onValueChange={([value]) => setSettings(prev => ({ ...prev, minContrast: value }))}
-                  min={3}
-                  max={7}
-                  step={0.5}
-                  className="w-full"
-                />
-                <p className="text-xs text-muted-foreground">{settings.minContrast}:1 ratio</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="includeShades"
-                  checked={settings.includeShades}
-                  onCheckedChange={(checked) => setSettings(prev => ({ ...prev, includeShades: checked }))}
-                />
-                <Label htmlFor="includeShades">Include Shades</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="includeTints"
-                  checked={settings.includeTints}
-                  onCheckedChange={(checked) => setSettings(prev => ({ ...prev, includeTints: checked }))}
-                />
-                <Label htmlFor="includeTints">Include Tints</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="preferAccessible"
-                  checked={settings.preferAccessible}
-                  onCheckedChange={(checked) => setSettings(prev => ({ ...prev, preferAccessible: checked }))}
-                />
-                <Label htmlFor="preferAccessible">Prefer Accessible</Label>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      )}
 
       <CardContent>
         {isGeneratingSuggestions ? (
@@ -600,197 +533,133 @@ export function EnhancedColorHarmonySuggestions({
             </p>
           </div>
         ) : (
-          <Tabs defaultValue="all" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="all">All ({suggestions.length})</TabsTrigger>
-              <TabsTrigger value="recommended">
-                Recommended ({suggestions.filter(s => s.confidence >= 0.7).length})
-              </TabsTrigger>
-              <TabsTrigger value="accessible">
-                Accessible ({suggestions.filter(s => s.accessibilityScore >= 0.7).length})
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="all" className="space-y-4">
-              {suggestions.map((suggestion) => (
-                <HarmonySuggestionCard
+          <div className="space-y-4">
+            {/* Display top suggestions (3 by default, or all if showAllSuggestions is true) */}
+            {suggestions
+              .slice(0, showAllSuggestions ? suggestions.length : 3)
+              .map((suggestion) => (
+                <SimplifiedHarmonySuggestionCard
                   key={suggestion.id}
                   suggestion={suggestion}
-                  isSelected={selectedSuggestion === suggestion.id}
+                  isApplied={appliedSuggestion === suggestion.id}
                   onApply={() => handleApplySuggestion(suggestion)}
                   onGenerate={() => handleGenerateWithHarmony(suggestion)}
-                  onPreview={() => setPreviewMode(!previewMode)}
                   isGenerating={isGenerating}
-                  previewMode={previewMode}
                 />
               ))}
-            </TabsContent>
-            
-            <TabsContent value="recommended" className="space-y-4">
-              {suggestions
-                .filter(s => s.confidence >= 0.7)
-                .map((suggestion) => (
-                  <HarmonySuggestionCard
-                    key={suggestion.id}
-                    suggestion={suggestion}
-                    isSelected={selectedSuggestion === suggestion.id}
-                    onApply={() => handleApplySuggestion(suggestion)}
-                    onGenerate={() => handleGenerateWithHarmony(suggestion)}
-                    onPreview={() => setPreviewMode(!previewMode)}
-                    isGenerating={isGenerating}
-                    previewMode={previewMode}
-                  />
-                ))}
-            </TabsContent>
-            
-            <TabsContent value="accessible" className="space-y-4">
-              {suggestions
-                .filter(s => s.accessibilityScore >= 0.7)
-                .map((suggestion) => (
-                  <HarmonySuggestionCard
-                    key={suggestion.id}
-                    suggestion={suggestion}
-                    isSelected={selectedSuggestion === suggestion.id}
-                    onApply={() => handleApplySuggestion(suggestion)}
-                    onGenerate={() => handleGenerateWithHarmony(suggestion)}
-                    onPreview={() => setPreviewMode(!previewMode)}
-                    isGenerating={isGenerating}
-                    previewMode={previewMode}
-                  />
-                ))}
-            </TabsContent>
-          </Tabs>
+
+            {/* Show More/Less button */}
+            {suggestions.length > 3 && (
+              <div className="text-center pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowAllSuggestions(!showAllSuggestions)}
+                  className="text-sm"
+                >
+                  {showAllSuggestions ? 'Show Less' : `Show ${suggestions.length - 3} More Suggestions`}
+                </Button>
+              </div>
+            )}
+          </div>
         )}
       </CardContent>
     </Card>
   );
 }
 
-interface HarmonySuggestionCardProps {
+interface SimplifiedHarmonySuggestionCardProps {
   suggestion: HarmonySuggestion;
-  isSelected: boolean;
+  isApplied: boolean;
   onApply: () => void;
   onGenerate: () => void;
-  onPreview: () => void;
   isGenerating: boolean;
-  previewMode: boolean;
 }
 
-function HarmonySuggestionCard({
+const SimplifiedHarmonySuggestionCard = memo(function SimplifiedHarmonySuggestionCard({
   suggestion,
-  isSelected,
+  isApplied,
   onApply,
   onGenerate,
-  onPreview,
-  isGenerating,
-  previewMode
-}: HarmonySuggestionCardProps) {
+  isGenerating
+}: SimplifiedHarmonySuggestionCardProps) {
   return (
-    <Card className={cn("overflow-hidden", isSelected && "ring-2 ring-primary")}>
+    <Card className={cn("overflow-hidden transition-all", isApplied && "ring-2 ring-primary bg-primary/5")}>
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
-            <CardTitle className="text-base flex items-center gap-2">
+        <div className="space-y-3">
+          <div className="flex-1 min-w-0">
+            <CardTitle className="text-base flex items-center gap-2 flex-wrap">
               {suggestion.name}
               <Badge variant="outline" className="text-xs">
-                {Math.round(suggestion.confidence * 100)}%
+                {Math.round(suggestion.confidence * 100)}% match
               </Badge>
-              <Badge 
-                variant={suggestion.accessibilityScore >= 0.7 ? "default" : "secondary"}
-                className="text-xs"
-              >
-                {Math.round(suggestion.accessibilityScore * 100)}% accessible
-              </Badge>
+              {suggestion.accessibilityScore >= 0.7 && (
+                <Badge variant="default" className="text-xs">
+                  ♿ Accessible
+                </Badge>
+              )}
             </CardTitle>
             <CardDescription className="mt-1">
               {suggestion.description}
             </CardDescription>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
               {suggestion.reasoning}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Button
-              variant="outline"
               size="sm"
-              onClick={onPreview}
+              onClick={onGenerate}
+              disabled={isGenerating}
+              variant="outline"
+              className="flex-1 sm:flex-none"
             >
-              <Eye className="h-4 w-4" />
+              <Wand2 className="h-4 w-4 mr-1" />
+              <span className="hidden sm:inline">Generate New</span>
+              <span className="sm:hidden">New</span>
             </Button>
             <Button
               size="sm"
               onClick={onApply}
               disabled={isGenerating}
-              variant={isSelected ? "default" : "outline"}
+              variant={isApplied ? "default" : "default"}
+              className="flex-1 sm:flex-none"
             >
-              {isSelected ? (
+              {isApplied ? (
                 <>
-                  <Check className="h-4 w-4 mr-2" />
-                  Applied
+                  <Check className="h-4 w-4 mr-1" />
+                  <span className="hidden sm:inline">Applied</span>
+                  <span className="sm:hidden">Done</span>
                 </>
               ) : (
-                'Apply'
+                <>
+                  <Palette className="h-4 w-4 mr-1" />
+                  <span className="hidden sm:inline">Apply Colors</span>
+                  <span className="sm:hidden">Apply</span>
+                </>
               )}
-            </Button>
-            <Button
-              size="sm"
-              onClick={onGenerate}
-              disabled={isGenerating}
-              variant="secondary"
-            >
-              <Wand2 className="h-4 w-4 mr-2" />
-              Generate
             </Button>
           </div>
         </div>
       </CardHeader>
       <CardContent>
-        {previewMode ? (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-              {Object.entries(suggestion.preview).map(([category, colors]) => (
-                colors.length > 0 && (
-                  <div key={category} className="space-y-2">
-                    <h4 className="text-xs font-medium text-muted-foreground capitalize">
-                      {category}
-                    </h4>
-                    <div className="grid grid-cols-2 gap-1">
-                      {colors.slice(0, 4).map((color: Color, index: number) => (
-                        <div
-                          key={index}
-                          className="aspect-square rounded border border-border"
-                          style={{ backgroundColor: color.hex }}
-                          title={color.hex}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )
-              ))}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+          {suggestion.colors.map((color, index) => (
+            <div key={index} className="space-y-2">
+              <div
+                className="aspect-square rounded-lg border-2 border-border/50 shadow-sm"
+                style={{ backgroundColor: color.hex }}
+                title={`${color.hex} - ${color.role}`}
+              />
+              <p className="text-xs text-center text-muted-foreground font-medium">
+                {color.role}
+              </p>
             </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-            {suggestion.colors.map((color, index) => (
-              <div key={index} className="space-y-2">
-                <ColorCard
-                  color={color}
-                  onColorChange={() => {}} // Read-only
-                  onLockToggle={() => {}} // Read-only
-                  onRemove={() => {}} // Read-only
-                  className="pointer-events-none"
-                />
-                <p className="text-xs text-center text-muted-foreground">
-                  {color.role}
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
+          ))}
+        </div>
       </CardContent>
     </Card>
   );
-}
+});
 
 // Helper function to convert HSL to hex (needed for the component)
 function hexToHsl(hex: string): { h: number; s: number; l: number } | null {

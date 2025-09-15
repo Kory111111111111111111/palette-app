@@ -61,9 +61,15 @@ export interface APISettings {
   geminiApiKey: string;
 }
 
+export interface AccessibilitySettings {
+  animationsEnabled: boolean;
+  prefersReducedMotion: boolean;
+}
+
 export interface AppSettings {
   theme: 'light' | 'dark';
   apiSettings: APISettings;
+  accessibility: AccessibilitySettings;
 }
 
 export interface ColorRole {

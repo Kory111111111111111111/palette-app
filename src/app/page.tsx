@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Toaster } from '@/components/ui/sonner';
 import { FileText, Code, Gamepad2, ArrowLeftRight, Sparkles } from 'lucide-react';
 import { UIPalette, Color, SavedPalette, GenerationContext } from '@/types';
@@ -20,12 +21,18 @@ import { AIService } from '@/services/ai';
 import { StorageService } from '@/services/storage';
 import { generateCSSVariables, generateSVG, generateFFHex, downloadFile } from '@/utils/color';
 import { useTheme } from '@/components/ThemeProvider';
-import { StarsBackground } from '@/components/animate-ui/components/backgrounds/stars';
+import { DynamicBackground } from '@/components/DynamicBackground';
+import { ModalContainer } from '@/components/ModalContainer';
+import { useModalQueue } from '@/contexts/ModalQueueContext';
+import { useUserJourney } from '@/contexts/UserJourneyContext';
 
 export default function HomePage() {
-  // Theme context
+  // Context hooks
   const { settings } = useTheme();
-  
+  const { openModal, closeModal } = useModalQueue();
+  const { advanceStage, incrementCounter, recordAction, state: journeyState } = useUserJourney();
+  const { currentStage } = journeyState;
+
   // State
   const [palette, setPalette] = useState<UIPalette>({
     brand: [],
@@ -41,21 +48,160 @@ export default function HomePage() {
   const [analysis, setAnalysis] = useState('');
   const [aiService, setAiService] = useState<AIService | null>(null);
   const [colorCount, setColorCount] = useState(12);
-  
-  // Modals
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [analysisOpen, setAnalysisOpen] = useState(false);
-  const [saveModalOpen, setSaveModalOpen] = useState(false);
+
+  // Modal state (simplified - just track data, not open/close state)
   const [saveName, setSaveName] = useState('');
-  const [exportModalOpen, setExportModalOpen] = useState(false);
-  
+
   // Comparison mode
   const [comparisonMode, setComparisonMode] = useState(false);
   const [comparisonPalette, setComparisonPalette] = useState<UIPalette | null>(null);
-  const [comparisonSelectorOpen, setComparisonSelectorOpen] = useState(false);
-  
+
   // Harmony suggestions
   const [showHarmonySuggestions, setShowHarmonySuggestions] = useState(false);
+
+  // Modal handlers using queue system
+  const openSettingsModal = () => {
+    const modalId = openModal('settings',
+      <SettingsPanel
+        open={true}
+        onOpenChange={() => closeModal(modalId)}
+      />
+    );
+  };
+
+  const openAnalysisModal = () => {
+    const modalId = openModal('analysis',
+      <AnalysisModal
+        open={true}
+        onOpenChange={() => closeModal(modalId)}
+        palette={palette}
+        onAnalyze={handleAnalyzePalette}
+        analysis={analysis}
+        isAnalyzing={isAnalyzing}
+      />
+    );
+  };
+
+  const openSaveModal = () => {
+    const modalId = openModal('save',
+      <Dialog open={true} onOpenChange={() => closeModal(modalId)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Save Palette</DialogTitle>
+            <DialogDescription>
+              Give your palette a memorable name for easy identification.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="palette-name">Palette Name</Label>
+              <Input
+                id="palette-name"
+                placeholder="My Awesome Palette"
+                value={saveName}
+                onChange={(e) => setSaveName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSavePalette();
+                    closeModal(modalId);
+                  }
+                }}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => closeModal(modalId)}>
+                Cancel
+              </Button>
+              <Button onClick={() => { handleSavePalette(); closeModal(modalId); }} disabled={!saveName.trim()}>
+                Save Palette
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
+  const openExportModal = () => {
+    const modalId = openModal('export',
+      <Dialog open={true} onOpenChange={() => closeModal(modalId)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Export Palette</DialogTitle>
+            <DialogDescription>
+              Choose how you&apos;d like to export your color palette.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-3">
+              <Button
+                variant="outline"
+                className="justify-start h-auto p-4"
+                onClick={() => { handleExport('svg'); closeModal(modalId); }}
+              >
+                <div className="flex items-center gap-3">
+                  <FileText className="h-5 w-5" />
+                  <div className="text-left">
+                    <div className="font-medium">SVG Image</div>
+                    <div className="text-sm text-muted-foreground">
+                      Vector image with color swatches and hex codes
+                    </div>
+                  </div>
+                </div>
+              </Button>
+
+              <Button
+                variant="outline"
+                className="justify-start h-auto p-4"
+                onClick={() => { handleExport('css'); closeModal(modalId); }}
+              >
+                <div className="flex items-center gap-3">
+                  <Code className="h-5 w-5" />
+                  <div className="text-left">
+                    <div className="font-medium">CSS Variables</div>
+                    <div className="text-sm text-muted-foreground">
+                      CSS custom properties for web development
+                    </div>
+                  </div>
+                </div>
+              </Button>
+
+              <Button
+                variant="outline"
+                className="justify-start h-auto p-4"
+                onClick={() => { handleExport('ff_hex'); closeModal(modalId); }}
+              >
+                <div className="flex items-center gap-3">
+                  <Gamepad2 className="h-5 w-5" />
+                  <div className="text-left">
+                    <div className="font-medium">FF Hex Format</div>
+                    <div className="text-sm text-muted-foreground">
+                      Hexadecimal values for game development
+                    </div>
+                  </div>
+                </div>
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
+  const openComparisonSelectorModal = () => {
+    const modalId = openModal('comparison-selector',
+      <ComparisonPaletteSelector
+        open={true}
+        onOpenChange={() => closeModal(modalId)}
+        savedPalettes={savedPalettes}
+        onSelectPalette={(palette) => {
+          handleSelectComparisonPalette(palette);
+          closeModal(modalId);
+        }}
+        currentPalette={palette}
+      />
+    );
+  };
 
   // Initialize
   useEffect(() => {
@@ -98,6 +244,14 @@ export default function HomePage() {
   }, [palette]);
 
   const handleGenerate = async (context: GenerationContext) => {
+    // Track user journey - move to creating stage if not already there
+    if (currentStage === 'exploring') {
+      advanceStage();
+    }
+
+    // Increment generation counter
+    incrementCounter('generationsCount');
+
     // Check for demo mode
     if (context.prompt?.startsWith('DEMO_MODE_')) {
       setIsGenerating(true);
@@ -243,10 +397,10 @@ export default function HomePage() {
 
   const handleSavePalette = async () => {
     if (!saveName.trim()) return;
-    
+
     const savedPalette = StorageService.savePalette(palette, saveName.trim());
     setSavedPalettes(prev => [...prev, savedPalette]);
-    setSaveModalOpen(false);
+    incrementCounter('savedPalettesCount');
     setSaveName('');
   };
 
@@ -266,9 +420,8 @@ export default function HomePage() {
     }
 
     setAnalysis('');
-    setAnalysisOpen(true);
     setIsAnalyzing(true);
-    
+
     try {
       await aiService.analyzePalette(palette, useCase, (chunk) => {
         setAnalysis(prev => prev + chunk);
@@ -305,7 +458,6 @@ export default function HomePage() {
     }
 
     downloadFile(content, filename, mimeType);
-    setExportModalOpen(false);
   };
 
   const handleStartComparison = () => {
@@ -313,13 +465,13 @@ export default function HomePage() {
       alert('No saved palettes available for comparison. Please save a palette first.');
       return;
     }
-    setComparisonSelectorOpen(true);
+    recordAction('usedComparisonMode');
+    openComparisonSelectorModal();
   };
 
   const handleSelectComparisonPalette = (savedPalette: SavedPalette) => {
     setComparisonPalette(savedPalette.palette);
     setComparisonMode(true);
-    setComparisonSelectorOpen(false);
   };
 
   const handleCloseComparison = () => {
@@ -363,72 +515,87 @@ export default function HomePage() {
   const canSave = palette.brand.length > 0 || palette.surface.length > 0;
 
   return (
-    <StarsBackground 
-      className="min-h-screen bg-black"
-      starColor="#ffffff"
-      speed={30}
-      factor={0.02}
-    >
-      <div className="relative z-10 min-h-screen bg-background/10">
+    <DynamicBackground>
+      <div className="min-h-screen bg-background/10">
         <Header
           savedPalettes={savedPalettes}
           onLoadPalette={handleLoadPalette}
           onDeletePalette={handleDeletePalette}
-          onSavePalette={() => setSaveModalOpen(true)}
-          onExportPalette={() => setExportModalOpen(true)}
-          onOpenSettings={() => setSettingsOpen(true)}
+          onSavePalette={openSaveModal}
+          onExportPalette={openExportModal}
+          onOpenSettings={openSettingsModal}
           onStartComparison={handleStartComparison}
           isGenerating={isGenerating}
           canSave={canSave}
+          hasColors={palette.brand.length > 0 || palette.surface.length > 0}
         />
 
         <main className="w-full px-4 py-8">
           <div className="max-w-8xl mx-auto">
             {comparisonMode ? (
               /* Comparison Mode */
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h1 className="text-2xl font-bold">Palette Comparison</h1>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowHarmonySuggestions(!showHarmonySuggestions)}
-                    >
-                      <Sparkles className="h-4 w-4 mr-2" />
-                      {showHarmonySuggestions ? 'Hide' : 'Show'} Harmony
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={handleCloseComparison}
-                    >
-                      Exit Comparison
-                    </Button>
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+                {/* Header - Full Width on Mobile, Spans all columns on Desktop */}
+                <div className="lg:col-span-12">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <h1 className="text-2xl font-bold">Palette Comparison</h1>
+                      <Badge variant="secondary" className="text-xs">
+                        Comparison Mode
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowHarmonySuggestions(!showHarmonySuggestions)}
+                        className="flex items-center gap-2"
+                      >
+                        <Sparkles className="h-4 w-4" />
+                        <span className="hidden sm:inline">
+                          {showHarmonySuggestions ? 'Hide' : 'Show'} Harmony
+                        </span>
+                        <span className="sm:hidden">
+                          Harmony
+                        </span>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={handleCloseComparison}
+                      >
+                        Exit Comparison
+                      </Button>
+                    </div>
                   </div>
                 </div>
-                
-                {comparisonPalette && (
-                  <PaletteComparison
-                    primaryPalette={palette}
-                    secondaryPalette={comparisonPalette}
-                    onClose={handleCloseComparison}
-                    onExportComparison={handleExportComparison}
-                  />
-                )}
-                
-                {showHarmonySuggestions && (
-                  <EnhancedColorHarmonySuggestions
-                    palette={palette}
-                    onApplySuggestion={handleApplyHarmonySuggestion}
-                    onGenerateWithHarmony={handleGenerateWithHarmony}
-                    isGenerating={isGenerating}
-                  />
-                )}
+
+                {/* Main Comparison Content */}
+                <div className="lg:col-span-12">
+                  <div className="space-y-6">
+                    {comparisonPalette && (
+                      <PaletteComparison
+                        primaryPalette={palette}
+                        secondaryPalette={comparisonPalette}
+                        onClose={handleCloseComparison}
+                        onExportComparison={handleExportComparison}
+                      />
+                    )}
+
+                    {showHarmonySuggestions && (
+                      <EnhancedColorHarmonySuggestions
+                        palette={palette}
+                        onApplySuggestion={handleApplyHarmonySuggestion}
+                        onGenerateWithHarmony={handleGenerateWithHarmony}
+                        isGenerating={isGenerating}
+                      />
+                    )}
+                  </div>
+                </div>
               </div>
             ) : (
               /* Normal Mode */
-              <div className="grid grid-cols-1 xl:grid-cols-5 responsive-stack gap-8">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
                 {/* Left Sidebar - Generator Controls */}
-                <div className="xl:col-span-2">
+                <div className="lg:col-span-5 xl:col-span-4 2xl:col-span-3">
                   <div className="sticky top-24 space-y-6">
                     <GeneratorControls
                       onGenerate={handleGenerate}
@@ -442,7 +609,7 @@ export default function HomePage() {
                       onDeletePalette={handleDeletePalette}
                       palette={palette}
                     />
-                    
+
                     {/* Enhanced Harmony Suggestions */}
                     <EnhancedColorHarmonySuggestions
                       palette={palette}
@@ -454,7 +621,7 @@ export default function HomePage() {
                 </div>
 
                 {/* Main Content - Palette Display */}
-                <div className="xl:col-span-3">
+                <div className="lg:col-span-7 xl:col-span-8 2xl:col-span-9">
                   <div className="space-y-6">
                     <PaletteDisplay
                       palette={palette}
@@ -462,10 +629,10 @@ export default function HomePage() {
                       onLockToggle={handleLockToggle}
                       onRemoveColor={handleRemoveColor}
                       onAddCustomColor={handleAddCustomColor}
-                      onAnalyzePalette={() => setAnalysisOpen(true)}
+                      onAnalyzePalette={openAnalysisModal}
                       isGenerating={isGenerating}
                     />
-                    
+
                     {/* Comparison Button */}
                     <div className="flex justify-center">
                       <Button
@@ -486,131 +653,10 @@ export default function HomePage() {
         </main>
       </div>
 
-      {/* Settings Modal */}
-      <SettingsPanel
-        open={settingsOpen}
-        onOpenChange={setSettingsOpen}
-      />
-
-      {/* Analysis Modal */}
-      <AnalysisModal
-        open={analysisOpen}
-        onOpenChange={setAnalysisOpen}
-        palette={palette}
-        onAnalyze={handleAnalyzePalette}
-        analysis={analysis}
-        isAnalyzing={isAnalyzing}
-      />
-
-      {/* Save Modal */}
-      <Dialog open={saveModalOpen} onOpenChange={setSaveModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Save Palette</DialogTitle>
-            <DialogDescription>
-              Give your palette a memorable name for easy identification.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="palette-name">Palette Name</Label>
-              <Input
-                id="palette-name"
-                placeholder="My Awesome Palette"
-                value={saveName}
-                onChange={(e) => setSaveName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleSavePalette();
-                  }
-                }}
-              />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setSaveModalOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleSavePalette} disabled={!saveName.trim()}>
-                Save Palette
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Export Modal */}
-      <Dialog open={exportModalOpen} onOpenChange={setExportModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Export Palette</DialogTitle>
-            <DialogDescription>
-              Choose how you&apos;d like to export your color palette.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 gap-3">
-              <Button
-                variant="outline"
-                className="justify-start h-auto p-4"
-                onClick={() => handleExport('svg')}
-              >
-                <div className="flex items-center gap-3">
-                  <FileText className="h-5 w-5" />
-                  <div className="text-left">
-                    <div className="font-medium">SVG Image</div>
-                    <div className="text-sm text-muted-foreground">
-                      Vector image with color swatches and hex codes
-                    </div>
-                  </div>
-                </div>
-              </Button>
-              
-              <Button
-                variant="outline"
-                className="justify-start h-auto p-4"
-                onClick={() => handleExport('css')}
-              >
-                <div className="flex items-center gap-3">
-                  <Code className="h-5 w-5" />
-                  <div className="text-left">
-                    <div className="font-medium">CSS Variables</div>
-                    <div className="text-sm text-muted-foreground">
-                      CSS custom properties for web development
-                    </div>
-                  </div>
-                </div>
-              </Button>
-              
-              <Button
-                variant="outline"
-                className="justify-start h-auto p-4"
-                onClick={() => handleExport('ff_hex')}
-              >
-                <div className="flex items-center gap-3">
-                  <Gamepad2 className="h-5 w-5" />
-                  <div className="text-left">
-                    <div className="font-medium">FF Hex Format</div>
-                    <div className="text-sm text-muted-foreground">
-                      Hexadecimal values for game development
-                    </div>
-                  </div>
-                </div>
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Comparison Palette Selector */}
-      <ComparisonPaletteSelector
-        open={comparisonSelectorOpen}
-        onOpenChange={setComparisonSelectorOpen}
-        savedPalettes={savedPalettes}
-        onSelectPalette={handleSelectComparisonPalette}
-        currentPalette={palette}
-      />
+      {/* Modal Container - handles all modals through queue system */}
+      <ModalContainer />
 
       <Toaster />
-    </StarsBackground>
+    </DynamicBackground>
   );
 }

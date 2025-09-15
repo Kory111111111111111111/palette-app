@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, memo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -18,7 +18,7 @@ interface ColorCardProps {
   className?: string;
 }
 
-export function ColorCard({
+export const ColorCard = memo(function ColorCard({
   color,
   onColorChange,
   onLockToggle,
@@ -29,28 +29,36 @@ export function ColorCard({
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(color.hex);
   const [copied, setCopied] = useState(false);
-  const [showActions, setShowActions] = useState(false);
+  const [isSelected, setIsSelected] = useState(false);
 
 
-  const handleCopy = async () => {
+  const handleCopy = useCallback(async () => {
     try {
       await copyToClipboard(color.hex);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setIsSelected(true);
+      setTimeout(() => {
+        setCopied(false);
+        setIsSelected(false);
+      }, 2000);
     } catch (error) {
       console.error('Failed to copy:', error);
     }
-  };
+  }, [color.hex]);
 
-  const handleEdit = () => {
+  const handleEdit = useCallback(() => {
     setIsEditing(true);
     setEditValue(color.hex);
-  };
+  }, [color.hex]);
 
-  const handleDoubleClick = (e: React.MouseEvent) => {
+  const handleClick = useCallback(() => {
+    handleCopy();
+  }, [handleCopy]);
+
+  const handleDoubleClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     handleEdit();
-  };
+  }, [handleEdit]);
 
   const handleSave = () => {
     const normalized = normalizeHex(editValue);
@@ -79,13 +87,13 @@ export function ColorCard({
     <TooltipProvider>
       <div
         className={cn(
-          'relative aspect-square min-h-[120px] rounded-lg overflow-hidden transition-all duration-200 cursor-pointer',
+          'relative aspect-square min-h-[120px] rounded-lg overflow-hidden transition-all duration-200 cursor-pointer group',
+          'hover:ring-2 hover:ring-primary/50 hover:ring-offset-2 hover:ring-offset-background',
           color.locked && 'ring-2 ring-primary ring-offset-2 ring-offset-background',
-          showActions && 'ring-2 ring-primary/50 ring-offset-2 ring-offset-background',
+          isSelected && 'ring-2 ring-green-500 ring-offset-2 ring-offset-background',
           className
         )}
-        onMouseEnter={() => setShowActions(true)}
-        onMouseLeave={() => setShowActions(false)}
+        onClick={handleClick}
         onDoubleClick={handleDoubleClick}
       >
         {/* Color Background */}
@@ -94,11 +102,22 @@ export function ColorCard({
           style={{ backgroundColor: color.hex }}
         />
 
-        {/* Action Buttons - Top Right */}
+        {/* Selection Indicator */}
+        {isSelected && (
+          <div className="absolute inset-0 bg-green-500/20 flex items-center justify-center">
+            {copied ? (
+              <Check className="h-8 w-8 text-green-600" />
+            ) : (
+              <Copy className="h-6 w-6 text-white drop-shadow-lg" />
+            )}
+          </div>
+        )}
+
+        {/* Action Buttons - Always visible for locked colors, on hover for others */}
         <div
           className={cn(
             'absolute top-2 right-2 flex gap-1 transition-opacity duration-200',
-            showActions ? 'opacity-100' : 'opacity-0'
+            color.locked ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
           )}
         >
           <Tooltip>
@@ -121,7 +140,7 @@ export function ColorCard({
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              {copied ? 'Copied!' : 'Copy hex code'}
+              {copied ? 'Copied!' : 'Click to copy hex code'}
             </TooltipContent>
           </Tooltip>
 
@@ -221,10 +240,10 @@ export function ColorCard({
           )}
         </div>
 
-        {/* Lock Indicator - Only show when not hovering */}
-        {color.locked && !showActions && (
-          <div className="absolute top-2 right-2">
-            <div className="rounded-full bg-primary p-1.5 shadow-lg">
+        {/* Lock Indicator */}
+        {color.locked && (
+          <div className="absolute top-2 left-2">
+            <div className="rounded-full bg-primary p-1 shadow-sm">
               <Lock className="h-3 w-3 text-primary-foreground" />
             </div>
           </div>
@@ -232,4 +251,4 @@ export function ColorCard({
       </div>
     </TooltipProvider>
   );
-}
+});
