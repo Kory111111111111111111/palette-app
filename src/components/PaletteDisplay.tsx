@@ -37,7 +37,7 @@ export function PaletteDisplay({
     surface: true,
     text: true,
     feedback: true,
-    extended: false,
+    extended: true,
     custom: true
   });
 

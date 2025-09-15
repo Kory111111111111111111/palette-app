@@ -1,0 +1,15 @@
+---
+description: You are working on a Webapp color palette generator with built in Gemini API integration. 
+globs:
+alwaysApply: true
+---
+- When using or creating components, they MUST be derived from shadcn https://ui.shadcn.com/docs
+- You must follow Shadcn styling throughout the site, ensure you use the proper TailwindV3 idioms. https://ui.shadcn.com/docs/theming
+- Your changes MUST be compatible with Github pages as that is where this webapp is hosted. https://docs.github.com/en/pages
+- All UI elements must use Shadcn UI components or extend them, avoiding custom component implementations unless absolutely necessary.
+- Tailwind CSS classes should be used for all styling, following Shadcn and TailwindV3 conventions for consistency and maintainability.
+- Ensure all code and assets are compatible with static site hosting on Github Pages; avoid server-side dependencies or features unsupported by Github Pages.
+- Keep component logic simple and focused; avoid unnecessary complexity and follow the KISS and DRY principles.
+- Use clear, descriptive names for components, variables, and functions to maximize code readability.
+- Centralize color palette logic and avoid duplicating color generation or manipulation code across components.
+- Regularly review and refactor code to maintain clarity, simplicity, and adherence to these rules.

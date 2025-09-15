@@ -98,6 +98,93 @@ export default function HomePage() {
   }, [palette]);
 
   const handleGenerate = async (context: GenerationContext) => {
+    // Check for demo mode
+    if (context.prompt?.startsWith('DEMO_MODE_')) {
+      setIsGenerating(true);
+      try {
+        // Simulate loading time
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        const demoType = context.prompt.replace('DEMO_MODE_', '') as 'brand' | 'ui' | 'web';
+        const demoPalettes = {
+          brand: {
+            brand: [
+              { hex: '#3B82F6', role: 'Primary', locked: false, isCustom: false },
+              { hex: '#1E40AF', role: 'Secondary', locked: false, isCustom: false },
+              { hex: '#F59E0B', role: 'Accent', locked: false, isCustom: false }
+            ],
+            surface: [
+              { hex: '#FFFFFF', role: 'Background', locked: false, isCustom: false },
+              { hex: '#F8FAFC', role: 'Surface', locked: false, isCustom: false }
+            ],
+            text: [
+              { hex: '#1E293B', role: 'Text Primary', locked: false, isCustom: false },
+              { hex: '#64748B', role: 'Text Secondary', locked: false, isCustom: false }
+            ],
+            feedback: [
+              { hex: '#10B981', role: 'Success', locked: false, isCustom: false },
+              { hex: '#EF4444', role: 'Error', locked: false, isCustom: false }
+            ],
+            extended: [],
+            custom: []
+          },
+          ui: {
+            brand: [
+              { hex: '#6366F1', role: 'Primary', locked: false, isCustom: false },
+              { hex: '#4F46E5', role: 'Secondary', locked: false, isCustom: false }
+            ],
+            surface: [
+              { hex: '#FFFFFF', role: 'Background', locked: false, isCustom: false },
+              { hex: '#F8FAFC', role: 'Surface', locked: false, isCustom: false },
+              { hex: '#F1F5F9', role: 'Surface Variant', locked: false, isCustom: false }
+            ],
+            text: [
+              { hex: '#0F172A', role: 'Text Primary', locked: false, isCustom: false },
+              { hex: '#475569', role: 'Text Secondary', locked: false, isCustom: false },
+              { hex: '#64748B', role: 'Text Tertiary', locked: false, isCustom: false },
+              { hex: '#CBD5E1', role: 'Border', locked: false, isCustom: false }
+            ],
+            feedback: [
+              { hex: '#10B981', role: 'Success', locked: false, isCustom: false },
+              { hex: '#F59E0B', role: 'Warning', locked: false, isCustom: false },
+              { hex: '#EF4444', role: 'Error', locked: false, isCustom: false },
+              { hex: '#3B82F6', role: 'Info', locked: false, isCustom: false }
+            ],
+            extended: [],
+            custom: []
+          },
+          web: {
+            brand: [
+              { hex: '#7C3AED', role: 'Primary', locked: false, isCustom: false },
+              { hex: '#A855F7', role: 'Secondary', locked: false, isCustom: false }
+            ],
+            surface: [
+              { hex: '#FFFFFF', role: 'Background', locked: false, isCustom: false },
+              { hex: '#F3F4F6', role: 'Surface', locked: false, isCustom: false }
+            ],
+            text: [
+              { hex: '#111827', role: 'Text Primary', locked: false, isCustom: false },
+              { hex: '#6B7280', role: 'Text Secondary', locked: false, isCustom: false }
+            ],
+            feedback: [
+              { hex: '#059669', role: 'Success', locked: false, isCustom: false },
+              { hex: '#DC2626', role: 'Error', locked: false, isCustom: false }
+            ],
+            extended: [
+              { hex: '#374151', role: 'Dark Surface', locked: false, isCustom: false },
+              { hex: '#9CA3AF', role: 'Muted Text', locked: false, isCustom: false }
+            ],
+            custom: []
+          }
+        };
+
+        setPalette(demoPalettes[demoType]);
+        return;
+      } finally {
+        setIsGenerating(false);
+      }
+    }
+
     if (!aiService) {
       alert('Please configure your API key in settings first.');
       return;

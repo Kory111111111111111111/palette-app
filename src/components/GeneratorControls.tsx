@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Sparkles, Image, Palette, Loader2, Upload } from 'lucide-react';
+import { Sparkles, Image, Palette, Loader2, Upload, FileText } from 'lucide-react';
 import { PresetPalette, PRESET_PALETTES, GenerationContext, AnalysisQuestion, SavedPalette } from '@/types';
 import { ScreenshotAnalysisModal } from '@/components/ScreenshotAnalysisModal';
 import { QuickHarmonyPanel } from '@/components/QuickHarmonyPanel';
@@ -106,9 +106,39 @@ export function GeneratorControls({ onGenerate, isGenerating, lockedColorsCount,
     }
   };
 
+  const handleQuickGenerate = async (type: 'brand' | 'ui' | 'web') => {
+    if (!aiService) {
+      // For demo mode, we'll use a special context that the main page can handle
+      await onGenerate({
+        type: 'prompt',
+        prompt: `DEMO_MODE_${type}`,
+        colorCount: type === 'brand' ? 8 : type === 'ui' ? 16 : 12
+      });
+      return;
+    }
+
+    const quickPrompts = {
+      brand: 'Generate a professional brand color palette with primary, secondary, and accent colors that work well together',
+      ui: 'Generate a complete UI design system palette including brand colors, surface colors, text colors, and feedback colors with proper accessibility',
+      web: 'Generate a modern web application color palette suitable for websites and web apps'
+    };
+
+    const smartColorCounts = {
+      brand: 8,
+      ui: 16,
+      web: 12
+    };
+
+    await onGenerate({
+      type: 'prompt',
+      prompt: quickPrompts[type],
+      colorCount: smartColorCounts[type]
+    });
+  };
+
   const handleGeneratePrompt = async () => {
     if (!prompt.trim()) return;
-    
+
     await onGenerate({
       type: 'prompt',
       prompt: prompt.trim(),
@@ -216,14 +246,69 @@ export function GeneratorControls({ onGenerate, isGenerating, lockedColorsCount,
 
   return (
     <div className="w-full space-y-6">
+      {/* Quick Generate Section */}
+      <Card className="border-primary/20 bg-primary/5">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            Quick Generate
+          </CardTitle>
+          <CardDescription>
+            Generate a palette with one click using smart defaults
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <Button
+              onClick={() => handleQuickGenerate('brand')}
+              disabled={isGenerating}
+              className="h-auto p-4 flex flex-col items-center gap-2"
+              variant="outline"
+            >
+              <Palette className="h-6 w-6" />
+              <div className="text-center">
+                <div className="font-medium">Brand Colors</div>
+                <div className="text-xs text-muted-foreground">Primary, secondary & accent</div>
+              </div>
+            </Button>
+
+            <Button
+              onClick={() => handleQuickGenerate('ui')}
+              disabled={isGenerating}
+              className="h-auto p-4 flex flex-col items-center gap-2"
+              variant="outline"
+            >
+              <Image className="h-6 w-6" />
+              <div className="text-center">
+                <div className="font-medium">Complete UI</div>
+                <div className="text-xs text-muted-foreground">Full design system</div>
+              </div>
+            </Button>
+
+            <Button
+              onClick={() => handleQuickGenerate('web')}
+              disabled={isGenerating}
+              className="h-auto p-4 flex flex-col items-center gap-2"
+              variant="outline"
+            >
+              <FileText className="h-6 w-6" />
+              <div className="text-center">
+                <div className="font-medium">Web Palette</div>
+                <div className="text-xs text-muted-foreground">Modern web colors</div>
+              </div>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5" />
-            Generate Palette
+            Advanced Generation
           </CardTitle>
           <CardDescription>
-            Create a new color palette using AI
+            Fine-tune your palette generation with custom prompts and presets
           </CardDescription>
         </CardHeader>
         <CardContent>

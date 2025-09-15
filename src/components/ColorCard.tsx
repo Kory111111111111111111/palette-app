@@ -8,8 +8,6 @@ import { Copy, Lock, Unlock, Trash2, Check } from 'lucide-react';
 import { Color } from '@/types';
 import { isValidHex, normalizeHex, copyToClipboard, getTextColor } from '@/utils/color';
 import { cn } from '@/lib/utils';
-import { motion, useMotionTemplate, useMotionValue } from 'motion/react';
-import { useCallback, useEffect } from 'react';
 
 interface ColorCardProps {
   color: Color;
@@ -31,53 +29,8 @@ export function ColorCard({
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(color.hex);
   const [copied, setCopied] = useState(false);
+  const [showActions, setShowActions] = useState(false);
 
-  // Magic border animation
-  const gradientSize = 200;
-  const mouseX = useMotionValue(-gradientSize);
-  const mouseY = useMotionValue(-gradientSize);
-  
-  const reset = useCallback(() => {
-    mouseX.set(-gradientSize);
-    mouseY.set(-gradientSize);
-  }, [gradientSize, mouseX, mouseY]);
-
-  const handlePointerMove = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      const rect = e.currentTarget.getBoundingClientRect();
-      mouseX.set(e.clientX - rect.left);
-      mouseY.set(e.clientY - rect.top);
-    },
-    [mouseX, mouseY],
-  );
-
-  useEffect(() => {
-    reset();
-  }, [reset]);
-
-  useEffect(() => {
-    const handleGlobalPointerOut = (e: PointerEvent) => {
-      if (!e.relatedTarget) {
-        reset();
-      }
-    };
-
-    const handleVisibility = () => {
-      if (document.visibilityState !== "visible") {
-        reset();
-      }
-    };
-
-    window.addEventListener("pointerout", handleGlobalPointerOut);
-    window.addEventListener("blur", reset);
-    document.addEventListener("visibilitychange", handleVisibility);
-
-    return () => {
-      window.removeEventListener("pointerout", handleGlobalPointerOut);
-      window.removeEventListener("blur", reset);
-      document.removeEventListener("visibilitychange", handleVisibility);
-    };
-  }, [reset]);
 
   const handleCopy = async () => {
     try {
@@ -92,6 +45,11 @@ export function ColorCard({
   const handleEdit = () => {
     setIsEditing(true);
     setEditValue(color.hex);
+  };
+
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    handleEdit();
   };
 
   const handleSave = () => {
@@ -121,46 +79,44 @@ export function ColorCard({
     <TooltipProvider>
       <div
         className={cn(
-          'color-card group relative aspect-square min-h-[120px] rounded-lg transition-all duration-200',
+          'relative aspect-square min-h-[120px] rounded-lg overflow-hidden transition-all duration-200 cursor-pointer',
           color.locked && 'ring-2 ring-primary ring-offset-2 ring-offset-background',
+          showActions && 'ring-2 ring-primary/50 ring-offset-2 ring-offset-background',
           className
         )}
-        onPointerMove={handlePointerMove}
-        onPointerLeave={reset}
-        onPointerEnter={reset}
+        onMouseEnter={() => setShowActions(true)}
+        onMouseLeave={() => setShowActions(false)}
+        onDoubleClick={handleDoubleClick}
       >
-        {/* Animated border */}
-        <motion.div
-          className="pointer-events-none absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-          style={{
-            background: useMotionTemplate`
-            radial-gradient(${gradientSize}px circle at ${mouseX}px ${mouseY}px,
-            #9E7AFF, 
-            #FE8BBB, 
-            var(--border) 100%
-            )
-            `,
-          }}
+        {/* Color Background */}
+        <div
+          className="w-full h-full"
+          style={{ backgroundColor: color.hex }}
         />
-        <div className="absolute inset-px rounded-lg" style={{ backgroundColor: color.hex }} />
-        
-        {/* Content */}
-        <div className="relative h-full">
-          {/* Color Actions Overlay */}
-          <div className="color-card-actions">
+
+        {/* Action Buttons - Top Right */}
+        <div
+          className={cn(
+            'absolute top-2 right-2 flex gap-1 transition-opacity duration-200',
+            showActions ? 'opacity-100' : 'opacity-0'
+          )}
+        >
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 size="sm"
                 variant="secondary"
-                onClick={handleCopy}
-                className="h-8 w-8 p-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleCopy();
+                }}
+                className="h-7 w-7 p-0 bg-black/60 hover:bg-black/80 border-white/20"
                 aria-label="Copy color"
               >
                 {copied ? (
-                  <Check className="h-4 w-4" />
+                  <Check className="h-3 w-3" />
                 ) : (
-                  <Copy className="h-4 w-4" />
+                  <Copy className="h-3 w-3" />
                 )}
               </Button>
             </TooltipTrigger>
@@ -174,14 +130,17 @@ export function ColorCard({
               <Button
                 size="sm"
                 variant="secondary"
-                onClick={onLockToggle}
-                className="h-8 w-8 p-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onLockToggle();
+                }}
+                className="h-7 w-7 p-0 bg-black/60 hover:bg-black/80 border-white/20"
                 aria-label={color.locked ? 'Unlock color' : 'Lock color'}
               >
                 {color.locked ? (
-                  <Lock className="h-4 w-4" />
+                  <Lock className="h-3 w-3" />
                 ) : (
-                  <Unlock className="h-4 w-4" />
+                  <Unlock className="h-3 w-3" />
                 )}
               </Button>
             </TooltipTrigger>
@@ -196,11 +155,14 @@ export function ColorCard({
                 <Button
                   size="sm"
                   variant="destructive"
-                  onClick={onRemove}
-                  className="h-8 w-8 p-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRemove();
+                  }}
+                  className="h-7 w-7 p-0 bg-red-600/80 hover:bg-red-600 border-red-400/20"
                   aria-label="Remove color"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-3 w-3" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Remove color</TooltipContent>
@@ -217,14 +179,14 @@ export function ColorCard({
                 onChange={(e) => setEditValue(e.target.value)}
                 onKeyDown={handleKeyDown}
                 onBlur={handleSave}
-                className="h-6 text-xs font-mono"
+                className="h-6 text-xs font-mono bg-white/20 border-white/30 text-white placeholder:text-white/70"
                 autoFocus
               />
               <div className="flex gap-1">
                 <Button size="sm" variant="secondary" onClick={handleSave} className="h-6 px-2 text-xs">
                   Save
                 </Button>
-                <Button size="sm" variant="ghost" onClick={handleCancel} className="h-6 px-2 text-xs">
+                <Button size="sm" variant="ghost" onClick={handleCancel} className="h-6 px-2 text-xs text-white hover:bg-white/20">
                   Cancel
                 </Button>
               </div>
@@ -232,11 +194,15 @@ export function ColorCard({
           ) : (
             <div
               className="cursor-pointer"
-              onClick={handleEdit}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEdit();
+              }}
               role="button"
               tabIndex={0}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
+                  e.stopPropagation();
                   handleEdit();
                 }
               }}
@@ -248,19 +214,21 @@ export function ColorCard({
               <p className="text-xs font-mono opacity-80" style={{ color: textColor }}>
                 {color.hex}
               </p>
+              <p className="text-xs opacity-60 mt-1" style={{ color: textColor }}>
+                Click to edit
+              </p>
             </div>
           )}
         </div>
 
-        {/* Lock Indicator */}
-        {color.locked && (
+        {/* Lock Indicator - Only show when not hovering */}
+        {color.locked && !showActions && (
           <div className="absolute top-2 right-2">
-            <div className="rounded-full bg-primary p-1">
+            <div className="rounded-full bg-primary p-1.5 shadow-lg">
               <Lock className="h-3 w-3 text-primary-foreground" />
             </div>
           </div>
         )}
-        </div>
       </div>
     </TooltipProvider>
   );

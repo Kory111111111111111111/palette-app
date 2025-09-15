@@ -60,6 +60,11 @@ export function SettingsPanel({
     setSettings(newSettings);
   };
 
+  const handleDemoModeToggle = (_checked: boolean) => {
+    // Demo mode doesn't need to be saved persistently
+    // We'll handle this in the main component
+  };
+
   const handleClearAllData = () => {
     if (confirm('Are you sure you want to clear all data? This will delete all saved palettes and settings.')) {
       StorageService.clearAllData();
@@ -200,6 +205,31 @@ export function SettingsPanel({
             </CardContent>
           </Card>
 
+          {/* Demo Mode */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Demo Mode</CardTitle>
+              <CardDescription>
+                Try the app without setting up an API key
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Enable Demo Mode</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Use pre-generated palettes and limited features
+                  </p>
+                </div>
+                <Switch
+                  checked={!settings.apiSettings.geminiApiKey}
+                  onCheckedChange={handleDemoModeToggle}
+                  disabled={!!settings.apiSettings.geminiApiKey}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
           {/* API Status */}
           <Card>
             <CardHeader>
@@ -213,12 +243,12 @@ export function SettingsPanel({
                   }`}
                 />
                 <span className="text-sm">
-                  {settings.apiSettings.geminiApiKey ? 'API key configured' : 'No API key configured'}
+                  {settings.apiSettings.geminiApiKey ? 'API key configured' : 'Demo mode active'}
                 </span>
               </div>
               {!settings.apiSettings.geminiApiKey && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  Add an API key above to enable AI-powered palette generation.
+                  Demo mode is active. Add an API key above to enable AI-powered generation.
                 </p>
               )}
             </CardContent>
