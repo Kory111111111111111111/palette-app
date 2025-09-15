@@ -21,13 +21,15 @@ import {
 import { ColorCard } from './ColorCard';
 import { UIPalette, Color, GenerationContext } from '@/types';
 import { 
-  generateHarmonyColors, 
   ColorHarmonyType, 
   generateShades, 
   generateTints,
   adjustColorLightness,
+  generateProfessionalUIHarmony,
+  calculateColorHarmonyScore,
 } from '@/utils/harmony';
 import { meetsWCAGAA } from '@/utils/color';
+import { analyzeColorPsychology, calculatePaletteHarmonyScore } from '@/utils/colorTheory';
 import { cn } from '@/lib/utils';
 
 interface EnhancedColorHarmonySuggestionsProps {
@@ -84,6 +86,8 @@ export function EnhancedColorHarmonySuggestions({
   // Analyze existing palette for better suggestions
   const paletteAnalysis = useMemo(() => {
     const allColors = Object.values(palette).flat();
+    const hexColors = allColors.map(color => color.hex);
+    
     const avgSaturation = allColors.reduce((sum, color) => {
       const hsl = hexToHsl(color.hex);
       return sum + (hsl?.s || 0);
@@ -93,6 +97,10 @@ export function EnhancedColorHarmonySuggestions({
       const hsl = hexToHsl(color.hex);
       return sum + (hsl?.l || 0);
     }, 0) / allColors.length;
+    
+    // Use advanced color theory analysis
+    const harmonyAnalysis = calculatePaletteHarmonyScore(hexColors);
+    const colorPsychologies = hexColors.map(hex => analyzeColorPsychology(hex));
     
     return {
       avgSaturation: Math.round(avgSaturation),
@@ -105,7 +113,13 @@ export function EnhancedColorHarmonySuggestions({
       hasCoolColors: allColors.some(color => {
         const hsl = hexToHsl(color.hex);
         return hsl && hsl.h >= 180 && hsl.h <= 300;
-      })
+      }),
+      harmonyScore: harmonyAnalysis.score,
+      harmonyType: harmonyAnalysis.harmonyType,
+      strengths: harmonyAnalysis.strengths,
+      improvements: harmonyAnalysis.improvements,
+      dominantEmotions: colorPsychologies.map(psych => psych.dominantEmotion),
+      colorTemperatures: colorPsychologies.map(psych => psych.temperature)
     };
   }, [palette]);
 
@@ -191,7 +205,8 @@ export function EnhancedColorHarmonySuggestions({
       // Generate suggestions for each locked color
       for (const lockedColor of lockedColors) {
         for (const type of settings.harmonyTypes) {
-          const harmonyColors = generateHarmonyColors(lockedColor.hex, type);
+          // Use professional UI harmony generation
+          const harmonyColors = generateProfessionalUIHarmony(lockedColor.hex, type, true);
           
           if (harmonyColors.length > 0) {
             // Create a complete palette suggestion
@@ -270,6 +285,10 @@ export function EnhancedColorHarmonySuggestions({
   ): number => {
     let confidence = 0.3; // Base confidence
     
+    // Use color theory harmony score
+    const harmonyScore = calculateColorHarmonyScore(harmonyColors);
+    confidence += harmonyScore * 0.4;
+    
     // Harmony type preference
     const typeWeights = {
       complementary: 0.9,
@@ -278,16 +297,16 @@ export function EnhancedColorHarmonySuggestions({
       tetradic: 0.6,
       splitComplementary: 0.75
     };
-    confidence += typeWeights[type] * 0.3;
+    confidence += typeWeights[type] * 0.2;
     
     // Color count bonus
-    confidence += Math.min(harmonyColors.length * 0.05, 0.2);
+    confidence += Math.min(harmonyColors.length * 0.05, 0.15);
     
     // Saturation match
     const baseHsl = hexToHsl(baseColor.hex);
     if (baseHsl) {
       const saturationDiff = Math.abs(baseHsl.s - analysis.avgSaturation);
-      confidence += (100 - saturationDiff) / 100 * 0.2;
+      confidence += (100 - saturationDiff) / 100 * 0.15;
     }
     
     // Accessibility bonus
@@ -299,7 +318,7 @@ export function EnhancedColorHarmonySuggestions({
       extended: [],
       custom: []
     });
-    confidence += accessibilityScore * 0.2;
+    confidence += accessibilityScore * 0.1;
     
     return Math.min(confidence, 1.0);
   };
@@ -333,6 +352,20 @@ export function EnhancedColorHarmonySuggestions({
     if (accessibilityScore > 0.7) reasons.push('Good accessibility');
     if (analysis.avgSaturation > 70) reasons.push('Vibrant color scheme');
     if (analysis.avgLightness > 60) reasons.push('Light theme friendly');
+    
+    // Add color theory insights
+    if (analysis.harmonyScore > 0.7) {
+      reasons.push('Strong color theory foundation');
+    }
+    if (analysis.strengths.length > 0) {
+      reasons.push(`Strengths: ${analysis.strengths.slice(0, 2).join(', ')}`);
+    }
+    
+    // Add emotional impact insights
+    const uniqueEmotions = [...new Set(analysis.dominantEmotions)];
+    if (uniqueEmotions.length > 0) {
+      reasons.push(`Emotional impact: ${uniqueEmotions.slice(0, 2).join(', ')}`);
+    }
     
     switch (type) {
       case 'complementary':

@@ -20,7 +20,40 @@ function cleanJsonResponse(text: string): string {
   return cleaned.trim();
 }
 
-const SYSTEM_PROMPT = `You are a professional UI/UX color palette designer with expertise in creating accessible, harmonious color schemes for modern web applications.
+const SYSTEM_PROMPT = `You are a professional UI/UX color palette designer with deep expertise in color theory, accessibility, and creating harmonious color schemes for modern web applications.
+
+COLOR THEORY PRINCIPLES TO FOLLOW:
+
+1. COLOR HARMONY FOUNDATIONS:
+   - Use established color harmonies: Complementary (180°), Analogous (30°), Triadic (120°), Tetradic (90°), Split Complementary (150°/210°)
+   - Apply the 60-30-10 rule: 60% dominant color, 30% secondary color, 10% accent color
+   - Ensure proper hue relationships based on the color wheel
+   - Maintain consistent saturation levels within each harmony type
+
+2. COLOR TEMPERATURE AWARENESS:
+   - Warm colors (reds, oranges, yellows): Energy, passion, urgency, warmth
+   - Cool colors (blues, greens, purples): Calm, professionalism, trust, stability
+   - Neutral colors (grays, browns): Balance, sophistication, versatility
+   - Choose temperature based on brand personality and emotional impact
+
+3. PROFESSIONAL SATURATION LEVELS:
+   - Vibrant (70-100%): High energy, modern, bold brands
+   - Moderate (40-70%): Professional, balanced, versatile
+   - Muted (20-40%): Sophisticated, subtle, premium
+   - Neutral (0-20%): Minimalist, clean, accessible
+
+4. ACCESSIBILITY-FIRST APPROACH:
+   - All text colors must meet WCAG AA contrast ratios (4.5:1 for normal text, 3:1 for large text)
+   - UI component colors must meet WCAG AA contrast ratios (3:1 minimum)
+   - Ensure sufficient contrast between all color combinations
+   - Consider colorblind accessibility (avoid red-green combinations)
+   - Test color combinations for readability and usability
+
+5. PROFESSIONAL UI COLOR SYSTEM:
+   - Establish clear color hierarchy and meaning
+   - Use consistent color roles across the interface
+   - Ensure colors work together as a cohesive system
+   - Balance visual interest with usability
 
 Your task is to generate complete UI color palettes that include all necessary colors for a professional application interface. Each palette must include:
 
@@ -45,12 +78,6 @@ FEEDBACK COLORS:
 - Warning: Cautionary feedback, warnings (required)
 - Error: Negative feedback, errors, destructive actions (required)
 - Info: Informational feedback (optional)
-
-ACCESSIBILITY REQUIREMENTS:
-- All text colors must meet WCAG AA contrast ratios (4.5:1 for normal text, 3:1 for large text)
-- UI component colors must meet WCAG AA contrast ratios (3:1 minimum)
-- Ensure sufficient contrast between all color combinations
-- Consider colorblind accessibility
 
 CRITICAL: Return ONLY valid JSON without any markdown formatting, code blocks, or additional text. Your response must be parseable JSON starting with { and ending with }.
 
@@ -96,17 +123,49 @@ CRITICAL: The total count of ALL colors (including locked colors) must equal exa
 
     switch (context.type) {
       case 'prompt':
-        prompt += `Generate a UI color palette based on this theme/prompt: "${context.prompt}"`;
+        prompt += `Generate a UI color palette based on this theme/prompt: "${context.prompt}"
+
+COLOR THEORY APPLICATION:
+- Analyze the theme to determine appropriate color temperature (warm/cool/neutral)
+- Choose a primary color harmony type that matches the theme's emotional impact
+- Apply the 60-30-10 rule for color distribution
+- Ensure professional saturation levels that match the brand personality
+- Create a cohesive color system with proper contrast ratios
+
+Consider the psychological impact of colors:
+- Red: Energy, urgency, passion, danger
+- Blue: Trust, professionalism, calm, stability  
+- Green: Growth, success, nature, harmony
+- Yellow: Optimism, creativity, warmth, caution
+- Purple: Luxury, creativity, mystery, sophistication
+- Orange: Enthusiasm, creativity, warmth, energy
+- Pink: Compassion, playfulness, romance, gentleness
+- Gray: Neutrality, sophistication, balance, professionalism`;
         break;
       
       case 'preset_inspired':
         const presetNames = context.presetPalettes?.map(p => p.name).join(', ');
-        prompt += `Generate a new UI color palette inspired by these preset palettes: ${presetNames}. Use them as inspiration but create your own unique palette.`;
+        prompt += `Generate a new UI color palette inspired by these preset palettes: ${presetNames}. Use them as inspiration but create your own unique palette.
+
+COLOR THEORY APPLICATION:
+- Analyze the inspiration palettes to identify their harmony types and color relationships
+- Extract the successful color theory principles (temperature, saturation, harmony)
+- Create a new palette that follows similar color theory foundations but with fresh colors
+- Maintain professional color relationships while introducing new hues
+- Ensure the new palette has its own distinct personality while learning from the inspiration`;
         break;
       
       case 'preset_strict':
         const strictPreset = context.presetPalettes?.[0];
-        prompt += `Generate a UI color palette using ONLY colors from the ${strictPreset?.name} palette. Assign these colors to appropriate UI roles: ${strictPreset?.colors.join(', ')}`;
+        prompt += `Generate a UI color palette using ONLY colors from the ${strictPreset?.name} palette. Assign these colors to appropriate UI roles: ${strictPreset?.colors.join(', ')}
+
+COLOR THEORY APPLICATION:
+- Analyze the provided colors to identify their color harmony relationships
+- Determine the color temperature and saturation characteristics
+- Apply proper color theory principles to assign colors to appropriate UI roles
+- Ensure optimal contrast ratios between text and background colors
+- Create a logical color hierarchy that follows professional UI design principles
+- Use color theory to determine which colors work best for different interface elements`;
         break;
       
       case 'screenshot_refined':
@@ -119,11 +178,20 @@ CRITICAL: The total count of ALL colors (including locked colors) must equal exa
 User's preferences from the analysis:
 ${answerText}
 
+COLOR THEORY APPLICATION:
+- Analyze the screenshot to identify existing color relationships and harmony types
+- Determine the current color temperature and saturation levels
+- Apply color theory principles to improve upon the existing palette
+- Choose harmony types that address the user's stated preferences
+- Ensure the new palette maintains visual consistency while improving accessibility
+- Use color psychology to align with the desired mood and brand personality
+
 Consider the uploaded screenshot context and create a palette that:
 1. Addresses the specific needs identified in the analysis
 2. Maintains visual harmony with the existing design elements
 3. Improves upon any accessibility or usability issues
 4. Aligns with the user's stated preferences for mood, audience, and brand personality
+5. Follows professional color theory principles for optimal visual impact
 
 Focus on creating a cohesive color system that enhances the existing UI while meeting the user's specific requirements.`;
         break;

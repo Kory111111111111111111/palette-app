@@ -87,41 +87,51 @@ export function generateHarmonyColors(baseHex: string, type: ColorHarmonyType): 
   if (!baseHsl) return [];
   
   const { h, s, l } = baseHsl;
-  const colors: string[] = [baseHex];
+  const colors: string[] = [];
   
   switch (type) {
     case 'complementary':
-      // 180 degrees opposite
-      colors.push(hslToHex({ h: (h + 180) % 360, s, l }));
+      // 180 degrees opposite with professional adjustments
+      colors.push(hslToHex({ h: (h + 180) % 360, s: Math.max(20, s * 0.8), l }));
+      // Add split complementary for more variety
+      colors.push(hslToHex({ h: (h + 150) % 360, s: s * 0.7, l: Math.min(90, l + 10) }));
+      colors.push(hslToHex({ h: (h + 210) % 360, s: s * 0.7, l: Math.max(10, l - 10) }));
       break;
       
     case 'analogous':
-      // 30 degrees on each side
-      colors.push(hslToHex({ h: (h + 30) % 360, s, l }));
-      colors.push(hslToHex({ h: (h - 30 + 360) % 360, s, l }));
+      // 30 degrees on each side with saturation variations
+      colors.push(hslToHex({ h: (h + 30) % 360, s: s * 0.9, l }));
+      colors.push(hslToHex({ h: (h - 30 + 360) % 360, s: s * 0.9, l }));
+      // Add one more for richer analogous palette
+      colors.push(hslToHex({ h: (h + 60) % 360, s: s * 0.6, l: Math.min(90, l + 15) }));
       break;
       
     case 'triadic':
-      // 120 degrees apart
-      colors.push(hslToHex({ h: (h + 120) % 360, s, l }));
-      colors.push(hslToHex({ h: (h + 240) % 360, s, l }));
+      // 120 degrees apart with professional saturation adjustments
+      colors.push(hslToHex({ h: (h + 120) % 360, s: Math.max(30, s * 0.8), l }));
+      colors.push(hslToHex({ h: (h + 240) % 360, s: Math.max(30, s * 0.8), l }));
+      // Add lighter/darker variations
+      colors.push(hslToHex({ h: (h + 120) % 360, s: s * 0.5, l: Math.min(90, l + 20) }));
+      colors.push(hslToHex({ h: (h + 240) % 360, s: s * 0.5, l: Math.max(10, l - 20) }));
       break;
       
     case 'tetradic':
-      // 90 degrees apart (rectangle)
-      colors.push(hslToHex({ h: (h + 90) % 360, s, l }));
-      colors.push(hslToHex({ h: (h + 180) % 360, s, l }));
-      colors.push(hslToHex({ h: (h + 270) % 360, s, l }));
+      // 90 degrees apart (rectangle) with balanced saturation
+      colors.push(hslToHex({ h: (h + 90) % 360, s: s * 0.8, l }));
+      colors.push(hslToHex({ h: (h + 180) % 360, s: s * 0.8, l }));
+      colors.push(hslToHex({ h: (h + 270) % 360, s: s * 0.8, l }));
       break;
       
     case 'splitComplementary':
-      // 150 and 210 degrees (adjacent to complement)
-      colors.push(hslToHex({ h: (h + 150) % 360, s, l }));
-      colors.push(hslToHex({ h: (h + 210) % 360, s, l }));
+      // 150 and 210 degrees (adjacent to complement) with professional adjustments
+      colors.push(hslToHex({ h: (h + 150) % 360, s: s * 0.8, l }));
+      colors.push(hslToHex({ h: (h + 210) % 360, s: s * 0.8, l }));
+      // Add the true complement for reference
+      colors.push(hslToHex({ h: (h + 180) % 360, s: s * 0.6, l: Math.min(90, l + 10) }));
       break;
   }
   
-  return colors.filter(color => color !== baseHex);
+  return colors;
 }
 
 export function getColorHarmonyType(colors: string[]): ColorHarmonyType | null {
@@ -219,4 +229,112 @@ export function generateTints(hex: string, count: number = 5): string[] {
   }
   
   return tints;
+}
+
+// Advanced color theory functions
+export function generateMonochromaticPalette(baseHex: string, count: number = 5): string[] {
+  const hsl = hexToHsl(baseHex);
+  if (!hsl) return [];
+  
+  const colors: string[] = [];
+  const { h, s } = hsl;
+  
+  // Generate variations in lightness while maintaining hue and saturation
+  const lightnessSteps = [20, 40, 60, 80, 90]; // Professional lightness levels
+  
+  for (let i = 0; i < Math.min(count, lightnessSteps.length); i++) {
+    colors.push(hslToHex({ h, s, l: lightnessSteps[i] }));
+  }
+  
+  return colors;
+}
+
+export function generateProfessionalUIHarmony(
+  baseHex: string, 
+  harmonyType: ColorHarmonyType,
+  includeNeutrals: boolean = true
+): string[] {
+  const baseHsl = hexToHsl(baseHex);
+  if (!baseHsl) return [];
+  
+  const harmonyColors = generateHarmonyColors(baseHex, harmonyType);
+  const colors: string[] = [...harmonyColors];
+  
+  if (includeNeutrals) {
+    // Add professional neutral colors
+    const neutralHue = baseHsl.h > 180 ? 30 : 200; // Warm neutral for cool colors, cool neutral for warm colors
+    colors.push(hslToHex({ h: neutralHue, s: 15, l: 50 })); // Medium neutral
+    colors.push(hslToHex({ h: neutralHue, s: 10, l: 85 })); // Light neutral
+    colors.push(hslToHex({ h: neutralHue, s: 20, l: 25 })); // Dark neutral
+  }
+  
+  return colors;
+}
+
+export function calculateColorHarmonyScore(colors: string[]): number {
+  if (colors.length < 2) return 0;
+  
+  const hslColors = colors.map(hex => hexToHsl(hex)).filter(Boolean) as HSLColor[];
+  if (hslColors.length < 2) return 0;
+  
+  let score = 0;
+  const baseHsl = hslColors[0];
+  
+  // Check for proper hue relationships
+  for (let i = 1; i < hslColors.length; i++) {
+    const hueDiff = Math.abs(hslColors[i].h - baseHsl.h);
+    const normalizedDiff = Math.min(hueDiff, 360 - hueDiff);
+    
+    // Score based on color theory relationships
+    if (normalizedDiff <= 30) {
+      score += 0.8; // Analogous
+    } else if (normalizedDiff >= 150 && normalizedDiff <= 210) {
+      score += 0.9; // Complementary/Split complementary
+    } else if (normalizedDiff >= 110 && normalizedDiff <= 130) {
+      score += 0.7; // Triadic
+    } else if (normalizedDiff >= 80 && normalizedDiff <= 100) {
+      score += 0.6; // Tetradic
+    } else {
+      score += 0.3; // Less harmonious
+    }
+  }
+  
+  // Check saturation consistency
+  const avgSaturation = hslColors.reduce((sum, hsl) => sum + hsl.s, 0) / hslColors.length;
+  const saturationVariance = hslColors.reduce((sum, hsl) => sum + Math.abs(hsl.s - avgSaturation), 0) / hslColors.length;
+  score += Math.max(0, 0.2 - saturationVariance / 100); // Penalize high saturation variance
+  
+  // Check lightness distribution
+  const lightnessValues = hslColors.map(hsl => hsl.l).sort((a, b) => a - b);
+  const lightnessRange = lightnessValues[lightnessValues.length - 1] - lightnessValues[0];
+  if (lightnessRange >= 40 && lightnessRange <= 80) {
+    score += 0.3; // Good lightness distribution
+  }
+  
+  return Math.min(1, score / colors.length);
+}
+
+export function generateAccessiblePalette(baseHex: string, harmonyType: ColorHarmonyType): string[] {
+  const harmonyColors = generateHarmonyColors(baseHex, harmonyType);
+  const accessibleColors: string[] = [];
+  
+  // Ensure sufficient contrast ratios
+  for (const color of harmonyColors) {
+    const hsl = hexToHsl(color);
+    if (!hsl) continue;
+    
+    // Adjust lightness to ensure accessibility
+    let adjustedLightness = hsl.l;
+    
+    // Ensure colors aren't too light or too dark for good contrast
+    if (adjustedLightness < 20) {
+      adjustedLightness = 25;
+    } else if (adjustedLightness > 85) {
+      adjustedLightness = 80;
+    }
+    
+    accessibleColors.push(hslToHex({ ...hsl, l: adjustedLightness }));
+  }
+  
+  return accessibleColors;
 }

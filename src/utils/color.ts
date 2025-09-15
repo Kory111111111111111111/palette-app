@@ -178,25 +178,111 @@ export function getTextColor(backgroundColor: string): string {
   return luminance > 0.5 ? '#000000' : '#ffffff';
 }
 
-export function generateRandomPalette(): string[] {
+// Color theory constants
+export const COLOR_TEMPERATURE = {
+  WARM: { min: 0, max: 60 }, // Red to Yellow
+  COOL: { min: 180, max: 300 }, // Cyan to Magenta
+  NEUTRAL: { min: 60, max: 180 } // Yellow-Green to Cyan
+} as const;
+
+export const PROFESSIONAL_SATURATION_RANGES = {
+  VIBRANT: { min: 70, max: 100 },
+  MODERATE: { min: 40, max: 70 },
+  MUTED: { min: 20, max: 40 },
+  NEUTRAL: { min: 0, max: 20 }
+} as const;
+
+export const PROFESSIONAL_LIGHTNESS_RANGES = {
+  DARK: { min: 0, max: 30 },
+  MEDIUM_DARK: { min: 30, max: 50 },
+  MEDIUM: { min: 50, max: 70 },
+  LIGHT: { min: 70, max: 90 },
+  VERY_LIGHT: { min: 90, max: 100 }
+} as const;
+
+export type ColorTemperature = 'warm' | 'cool' | 'neutral';
+export type SaturationLevel = 'vibrant' | 'moderate' | 'muted' | 'neutral';
+export type LightnessLevel = 'dark' | 'medium_dark' | 'medium' | 'light' | 'very_light';
+
+export function getColorTemperature(hue: number): ColorTemperature {
+  if (hue >= COLOR_TEMPERATURE.WARM.min && hue <= COLOR_TEMPERATURE.WARM.max) {
+    return 'warm';
+  } else if (hue >= COLOR_TEMPERATURE.COOL.min && hue <= COLOR_TEMPERATURE.COOL.max) {
+    return 'cool';
+  }
+  return 'neutral';
+}
+
+export function generateProfessionalPalette(
+  baseHue?: number,
+  temperature?: ColorTemperature,
+  saturationLevel: SaturationLevel = 'moderate',
+  lightnessLevel: LightnessLevel = 'medium'
+): string[] {
   const colors: string[] = [];
   
-  // Generate a base color
-  const hue = Math.floor(Math.random() * 360);
-  const saturation = 60 + Math.random() * 40; // 60-100%
-  const lightness = 30 + Math.random() * 40; // 30-70%
-  
-  // Generate variations
-  for (let i = 0; i < 8; i++) {
-    const h = (hue + i * 45) % 360;
-    const s = Math.max(20, saturation - Math.random() * 20);
-    const l = Math.max(10, Math.min(90, lightness + (Math.random() - 0.5) * 40));
-    
-    const hex = hslToHex(h, s, l);
-    colors.push(hex);
+  // Determine base hue based on temperature preference
+  let hue: number;
+  if (baseHue !== undefined) {
+    hue = baseHue;
+  } else if (temperature) {
+    const tempRange = COLOR_TEMPERATURE[temperature.toUpperCase() as keyof typeof COLOR_TEMPERATURE];
+    hue = tempRange.min + Math.random() * (tempRange.max - tempRange.min);
+  } else {
+    hue = Math.floor(Math.random() * 360);
   }
   
-  return colors;
+  const satRange = PROFESSIONAL_SATURATION_RANGES[saturationLevel.toUpperCase() as keyof typeof PROFESSIONAL_SATURATION_RANGES];
+  const lightRange = PROFESSIONAL_LIGHTNESS_RANGES[lightnessLevel.toUpperCase() as keyof typeof PROFESSIONAL_LIGHTNESS_RANGES];
+  
+  // Generate base color with professional parameters
+  const baseSaturation = satRange.min + Math.random() * (satRange.max - satRange.min);
+  const baseLightness = lightRange.min + Math.random() * (lightRange.max - lightRange.min);
+  
+  const baseColor = hslToHex(hue, baseSaturation, baseLightness);
+  colors.push(baseColor);
+  
+  // Generate harmonious variations using color theory principles
+  const harmonyTypes: Array<'complementary' | 'analogous' | 'triadic'> = ['complementary', 'analogous', 'triadic'];
+  const selectedHarmony = harmonyTypes[Math.floor(Math.random() * harmonyTypes.length)];
+  
+  switch (selectedHarmony) {
+    case 'complementary':
+      // Add complementary color (180° opposite)
+      const compHue = (hue + 180) % 360;
+      colors.push(hslToHex(compHue, baseSaturation * 0.8, baseLightness));
+      // Add analogous colors for the base
+      colors.push(hslToHex((hue + 30) % 360, baseSaturation * 0.6, baseLightness + 10));
+      colors.push(hslToHex((hue - 30 + 360) % 360, baseSaturation * 0.6, baseLightness - 10));
+      break;
+      
+    case 'analogous':
+      // Add 2-3 analogous colors (30° apart)
+      colors.push(hslToHex((hue + 30) % 360, baseSaturation, baseLightness));
+      colors.push(hslToHex((hue - 30 + 360) % 360, baseSaturation, baseLightness));
+      colors.push(hslToHex((hue + 60) % 360, baseSaturation * 0.7, baseLightness + 15));
+      break;
+      
+    case 'triadic':
+      // Add triadic colors (120° apart)
+      colors.push(hslToHex((hue + 120) % 360, baseSaturation * 0.8, baseLightness));
+      colors.push(hslToHex((hue + 240) % 360, baseSaturation * 0.8, baseLightness));
+      // Add a lighter/darker variation
+      colors.push(hslToHex(hue, baseSaturation * 0.5, baseLightness + 20));
+      break;
+  }
+  
+  // Add neutral colors for balance
+  const neutralHue = getColorTemperature(hue) === 'warm' ? 200 : 30; // Cool neutral for warm base, warm neutral for cool base
+  colors.push(hslToHex(neutralHue, 20, 50)); // Neutral gray
+  colors.push(hslToHex(neutralHue, 10, 80)); // Light neutral
+  
+  return colors.slice(0, 8); // Limit to 8 colors for professional palettes
+}
+
+export function generateRandomPalette(): string[] {
+  // Use the new professional palette generation
+  return generateProfessionalPalette();
 }
 
 export function hslToHex(h: number, s: number, l: number): string {
