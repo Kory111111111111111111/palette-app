@@ -247,7 +247,7 @@ export function GeneratorControls({ onGenerate, isGenerating, lockedColorsCount,
   return (
     <div className="w-full space-y-6">
       {/* Quick Generate Section */}
-      <Card className="border-primary/20 bg-primary/5">
+      <Card className="border-primary/20">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
@@ -262,11 +262,11 @@ export function GeneratorControls({ onGenerate, isGenerating, lockedColorsCount,
             <Button
               onClick={() => handleQuickGenerate('brand')}
               disabled={isGenerating}
-              className="h-auto p-4 flex flex-col items-center gap-2"
+              className="h-auto p-4 flex flex-col items-center gap-2 whitespace-normal break-words text-pretty w-full"
               variant="outline"
             >
               <Palette className="h-6 w-6" />
-              <div className="text-center">
+              <div className="text-center leading-snug">
                 <div className="font-medium">Brand Colors</div>
                 <div className="text-xs text-muted-foreground">Primary, secondary & accent</div>
               </div>
@@ -275,11 +275,11 @@ export function GeneratorControls({ onGenerate, isGenerating, lockedColorsCount,
             <Button
               onClick={() => handleQuickGenerate('ui')}
               disabled={isGenerating}
-              className="h-auto p-4 flex flex-col items-center gap-2"
+              className="h-auto p-4 flex flex-col items-center gap-2 whitespace-normal break-words text-pretty w-full"
               variant="outline"
             >
               <Image className="h-6 w-6" />
-              <div className="text-center">
+              <div className="text-center leading-snug">
                 <div className="font-medium">Complete UI</div>
                 <div className="text-xs text-muted-foreground">Full design system</div>
               </div>
@@ -288,11 +288,11 @@ export function GeneratorControls({ onGenerate, isGenerating, lockedColorsCount,
             <Button
               onClick={() => handleQuickGenerate('web')}
               disabled={isGenerating}
-              className="h-auto p-4 flex flex-col items-center gap-2"
+              className="h-auto p-4 flex flex-col items-center gap-2 whitespace-normal break-words text-pretty w-full"
               variant="outline"
             >
               <FileText className="h-6 w-6" />
-              <div className="text-center">
+              <div className="text-center leading-snug">
                 <div className="font-medium">Web Palette</div>
                 <div className="text-xs text-muted-foreground">Modern web colors</div>
               </div>

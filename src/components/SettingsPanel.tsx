@@ -82,19 +82,19 @@ export function SettingsPanel({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* API Settings */}
-          <Card>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* API Configuration & Status - Full Width */}
+          <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle>API Configuration</CardTitle>
               <CardDescription>
                 Configure your Google Gemini API key for AI-powered palette generation.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="api-key">Google Gemini API Key</Label>
-                <div className="flex gap-2">
+                <div className="flex gap-3">
                   <div className="relative flex-1">
                     <Input
                       id="api-key"
@@ -150,6 +150,23 @@ export function SettingsPanel({
                   </a>
                 </p>
               </div>
+              
+              {/* API Status */}
+              <div className="flex items-center gap-2 pt-4 border-t">
+                <div
+                  className={`w-2 h-2 rounded-full ${
+                    settings.apiSettings.geminiApiKey ? 'bg-green-500' : 'bg-red-500'
+                  }`}
+                />
+                <span className="text-sm font-medium">
+                  {settings.apiSettings.geminiApiKey ? 'API key configured' : 'Demo mode active'}
+                </span>
+                {!settings.apiSettings.geminiApiKey && (
+                  <span className="text-xs text-muted-foreground ml-2">
+                    Add an API key above to enable AI-powered generation.
+                  </span>
+                )}
+              </div>
             </CardContent>
           </Card>
 
@@ -173,34 +190,6 @@ export function SettingsPanel({
                   checked={settings.theme === 'dark'}
                   onCheckedChange={handleThemeToggle}
                 />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Data Management */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Data Management</CardTitle>
-              <CardDescription>
-                Manage your saved data and application storage.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Clear All Data</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Delete all saved palettes and reset settings
-                  </p>
-                </div>
-                <Button
-                  onClick={handleClearAllData}
-                  variant="destructive"
-                  size="sm"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Clear All
-                </Button>
               </div>
             </CardContent>
           </Card>
@@ -230,27 +219,31 @@ export function SettingsPanel({
             </CardContent>
           </Card>
 
-          {/* API Status */}
-          <Card>
+          {/* Data Management - Full Width */}
+          <Card className="lg:col-span-2">
             <CardHeader>
-              <CardTitle>API Status</CardTitle>
+              <CardTitle>Data Management</CardTitle>
+              <CardDescription>
+                Manage your saved data and application storage.
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <div
-                  className={`w-2 h-2 rounded-full ${
-                    settings.apiSettings.geminiApiKey ? 'bg-green-500' : 'bg-red-500'
-                  }`}
-                />
-                <span className="text-sm">
-                  {settings.apiSettings.geminiApiKey ? 'API key configured' : 'Demo mode active'}
-                </span>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Clear All Data</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Delete all saved palettes and reset settings
+                  </p>
+                </div>
+                <Button
+                  onClick={handleClearAllData}
+                  variant="destructive"
+                  size="sm"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Clear All
+                </Button>
               </div>
-              {!settings.apiSettings.geminiApiKey && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Demo mode is active. Add an API key above to enable AI-powered generation.
-                </p>
-              )}
             </CardContent>
           </Card>
         </div>
