@@ -24,6 +24,28 @@ export function QuickHarmonyPanel({
   const [isOpen, setIsOpen] = useState(false);
   const [selectedHarmony, setSelectedHarmony] = useState<ColorHarmonyType | null>(null);
 
+  function getHarmonyDisplayName(type: ColorHarmonyType): string {
+    const names = {
+      complementary: 'Complementary',
+      analogous: 'Analogous',
+      triadic: 'Triadic',
+      tetradic: 'Tetradic',
+      splitComplementary: 'Split Complementary'
+    } as const;
+    return names[type];
+  }
+
+  function getHarmonyDescription(type: ColorHarmonyType): string {
+    const descriptions = {
+      complementary: 'High contrast',
+      analogous: 'Harmonious',
+      triadic: 'Balanced',
+      tetradic: 'Rich variety',
+      splitComplementary: 'Subtle contrast'
+    } as const;
+    return descriptions[type];
+  }
+
   // Get locked colors for quick harmony generation
   const lockedColors = Object.values(palette).flat().filter(color => color.locked);
   
@@ -46,27 +68,7 @@ export function QuickHarmonyPanel({
     });
   }, [lockedColors]);
 
-  const getHarmonyDisplayName = (type: ColorHarmonyType): string => {
-    const names = {
-      complementary: 'Complementary',
-      analogous: 'Analogous',
-      triadic: 'Triadic',
-      tetradic: 'Tetradic',
-      splitComplementary: 'Split Complementary'
-    };
-    return names[type];
-  };
-
-  const getHarmonyDescription = (type: ColorHarmonyType): string => {
-    const descriptions = {
-      complementary: 'High contrast',
-      analogous: 'Harmonious',
-      triadic: 'Balanced',
-      tetradic: 'Rich variety',
-      splitComplementary: 'Subtle contrast'
-    };
-    return descriptions[type];
-  };
+  
 
   const handleQuickGenerate = async (harmonyType: ColorHarmonyType) => {
     if (!lockedColors.length) return;
