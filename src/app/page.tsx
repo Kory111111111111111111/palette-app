@@ -1,14 +1,27 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import { Header } from '@/components/Header';
 import { GeneratorControls } from '@/components/GeneratorControls';
 import { PaletteDisplay } from '@/components/PaletteDisplay';
 import { SettingsPanel } from '@/components/SettingsPanel';
 import { AnalysisModal } from '@/components/AnalysisModal';
-import { PaletteComparison } from '@/components/PaletteComparison';
-import { EnhancedColorHarmonySuggestions } from '@/components/EnhancedColorHarmonySuggestions';
-import { ComparisonPaletteSelector } from '@/components/ComparisonPaletteSelector';
+// Lazy load non-critical components
+const EnhancedColorHarmonySuggestions = lazy(() => 
+  import('@/components/EnhancedColorHarmonySuggestions').then(module => ({
+    default: module.EnhancedColorHarmonySuggestions
+  }))
+);
+const ComparisonPaletteSelector = lazy(() => 
+  import('@/components/ComparisonPaletteSelector').then(module => ({
+    default: module.ComparisonPaletteSelector
+  }))
+);
+const PaletteComparison = lazy(() => 
+  import('@/components/PaletteComparison').then(module => ({
+    default: module.PaletteComparison
+  }))
+);
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -25,6 +38,7 @@ import { DynamicBackground } from '@/components/DynamicBackground';
 import { ModalContainer } from '@/components/ModalContainer';
 import { useModalQueue } from '@/contexts/ModalQueueContext';
 import { useUserJourney } from '@/contexts/UserJourneyContext';
+import { PaletteDisplaySkeleton, GeneratorControlsSkeleton, HarmonySuggestionsSkeleton } from '@/components/LoadingSkeleton';
 
 export default function HomePage() {
   // Context hooks
@@ -48,6 +62,7 @@ export default function HomePage() {
   const [analysis, setAnalysis] = useState('');
   const [aiService, setAiService] = useState<AIService | null>(null);
   const [colorCount, setColorCount] = useState(12);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   // Modal state (simplified - just track data, not open/close state)
   const [saveName, setSaveName] = useState('');
@@ -190,16 +205,18 @@ export default function HomePage() {
 
   const openComparisonSelectorModal = () => {
     const modalId = openModal('comparison-selector',
-      <ComparisonPaletteSelector
-        open={true}
-        onOpenChange={() => closeModal(modalId)}
-        savedPalettes={savedPalettes}
-        onSelectPalette={(palette) => {
-          handleSelectComparisonPalette(palette);
-          closeModal(modalId);
-        }}
-        currentPalette={palette}
-      />
+      <Suspense fallback={<div className="p-4 text-center">Loading...</div>}>
+        <ComparisonPaletteSelector
+          open={true}
+          onOpenChange={() => closeModal(modalId)}
+          savedPalettes={savedPalettes}
+          onSelectPalette={(palette) => {
+            handleSelectComparisonPalette(palette);
+            closeModal(modalId);
+          }}
+          currentPalette={palette}
+        />
+      </Suspense>
     );
   };
 
@@ -233,6 +250,13 @@ export default function HomePage() {
     } else {
       console.log('🏠 [HomePage] No API key available');
     }
+
+    // Simulate initial loading time for better UX
+    const timer = setTimeout(() => {
+      setIsInitialLoading(false);
+    }, 800);
+
+    return () => clearTimeout(timer);
   }, [settings.apiSettings.geminiApiKey]);
 
 
@@ -572,22 +596,44 @@ export default function HomePage() {
                 <div className="lg:col-span-12">
                   <div className="space-y-6">
                     {comparisonPalette && (
-                      <PaletteComparison
-                        primaryPalette={palette}
-                        secondaryPalette={comparisonPalette}
-                        onClose={handleCloseComparison}
-                        onExportComparison={handleExportComparison}
-                      />
+                      <Suspense fallback={<HarmonySuggestionsSkeleton />}>
+                        <PaletteComparison
+                          primaryPalette={palette}
+                          secondaryPalette={comparisonPalette}
+                          onClose={handleCloseComparison}
+                          onExportComparison={handleExportComparison}
+                        />
+                      </Suspense>
                     )}
 
                     {showHarmonySuggestions && (
-                      <EnhancedColorHarmonySuggestions
-                        palette={palette}
-                        onApplySuggestion={handleApplyHarmonySuggestion}
-                        onGenerateWithHarmony={handleGenerateWithHarmony}
-                        isGenerating={isGenerating}
-                      />
+                      <Suspense fallback={<HarmonySuggestionsSkeleton />}>
+                        <EnhancedColorHarmonySuggestions
+                          palette={palette}
+                          onApplySuggestion={handleApplyHarmonySuggestion}
+                          onGenerateWithHarmony={handleGenerateWithHarmony}
+                          isGenerating={isGenerating}
+                        />
+                      </Suspense>
                     )}
+                  </div>
+                </div>
+              </div>
+            ) : isInitialLoading ? (
+              /* Loading State */
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+                {/* Left Sidebar - Generator Controls Skeleton */}
+                <div className="lg:col-span-5 xl:col-span-4 2xl:col-span-3">
+                  <div className="sticky top-24">
+                    <GeneratorControlsSkeleton />
+                  </div>
+                </div>
+
+                {/* Main Content - Palette Display Skeleton */}
+                <div className="lg:col-span-7 xl:col-span-8 2xl:col-span-9">
+                  <div className="space-y-6">
+                    <PaletteDisplaySkeleton />
+                    <HarmonySuggestionsSkeleton />
                   </div>
                 </div>
               </div>
@@ -596,7 +642,7 @@ export default function HomePage() {
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
                 {/* Left Sidebar - Generator Controls */}
                 <div className="lg:col-span-5 xl:col-span-4 2xl:col-span-3">
-                  <div className="sticky top-24 space-y-6">
+                  <div className="sticky top-24">
                     <GeneratorControls
                       onGenerate={handleGenerate}
                       isGenerating={isGenerating}
@@ -608,14 +654,6 @@ export default function HomePage() {
                       onLoadPalette={handleLoadPalette}
                       onDeletePalette={handleDeletePalette}
                       palette={palette}
-                    />
-
-                    {/* Enhanced Harmony Suggestions */}
-                    <EnhancedColorHarmonySuggestions
-                      palette={palette}
-                      onApplySuggestion={handleApplyHarmonySuggestion}
-                      onGenerateWithHarmony={handleGenerateWithHarmony}
-                      isGenerating={isGenerating}
                     />
                   </div>
                 </div>
@@ -632,6 +670,16 @@ export default function HomePage() {
                       onAnalyzePalette={openAnalysisModal}
                       isGenerating={isGenerating}
                     />
+
+                    {/* Enhanced Harmony Suggestions - Moved below palette */}
+                    <Suspense fallback={<HarmonySuggestionsSkeleton />}>
+                      <EnhancedColorHarmonySuggestions
+                        palette={palette}
+                        onApplySuggestion={handleApplyHarmonySuggestion}
+                        onGenerateWithHarmony={handleGenerateWithHarmony}
+                        isGenerating={isGenerating}
+                      />
+                    </Suspense>
 
                     {/* Comparison Button */}
                     <div className="flex justify-center">

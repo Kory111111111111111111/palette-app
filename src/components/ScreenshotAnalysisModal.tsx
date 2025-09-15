@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { OptimizedImage } from '@/components/OptimizedImage';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -96,11 +97,12 @@ export function ScreenshotAnalysisModal({
             <div className="flex-shrink-0">
               <Label className="text-sm font-medium mb-2 block">Uploaded Screenshot</Label>
               <div className="w-48 h-32 border border-border rounded-lg overflow-hidden bg-muted">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <OptimizedImage
                   src={imagePreview}
-                  alt=""
+                  alt="Screenshot for analysis"
                   className="w-full h-full object-cover"
+                  loading="lazy"
+                  decoding="async"
                 />
               </div>
             </div>
