@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
@@ -40,6 +41,16 @@ export function GeneratorControls({ onGenerate, isGenerating, lockedColorsCount,
   const [presetMode, setPresetMode] = useState<'inspired' | 'strict'>('inspired');
   const [screenshot, setScreenshot] = useState<File | null>(null);
   const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
+  
+  // Algorithmic generation state
+  const [algorithmicHarmony, setAlgorithmicHarmony] = useState<'complementary' | 'analogous' | 'triadic' | 'tetradic' | 'splitComplementary' | 'monochromatic'>('complementary');
+  const [algorithmicBaseColor, setAlgorithmicBaseColor] = useState('');
+  const [algorithmicTemperature, setAlgorithmicTemperature] = useState<'warm' | 'cool' | 'neutral' | undefined>(undefined);
+  const [algorithmicSaturation, setAlgorithmicSaturation] = useState<'vibrant' | 'moderate' | 'muted' | 'neutral'>('moderate');
+  const [algorithmicSeed, setAlgorithmicSeed] = useState<number>(Date.now());
+  const [useBaseColor, setUseBaseColor] = useState(false);
+  const [useTemperature, setUseTemperature] = useState(false);
+  const [useSeed, setUseSeed] = useState(false);
   
   // Screenshot analysis state
   const [analysisModalOpen, setAnalysisModalOpen] = useState(false);
@@ -209,6 +220,22 @@ export function GeneratorControls({ onGenerate, isGenerating, lockedColorsCount,
     }
   };
 
+  const handleGenerateAlgorithmic = async () => {
+    incrementCounter('generationsCount');
+    
+    await onGenerate({
+      type: 'algorithmic',
+      algorithmic: {
+        harmonyType: algorithmicHarmony,
+        baseColor: useBaseColor && algorithmicBaseColor ? algorithmicBaseColor : undefined,
+        temperature: useTemperature ? algorithmicTemperature : undefined,
+        saturationLevel: algorithmicSaturation,
+        seed: useSeed ? algorithmicSeed : undefined
+      },
+      colorCount: colorCount
+    });
+  };
+
   const handleAnalysisComplete = async (answers: Record<string, string>) => {
     if (!screenshotPreview) return;
 
@@ -322,9 +349,10 @@ export function GeneratorControls({ onGenerate, isGenerating, lockedColorsCount,
                 Advanced Generation
               </h3>
               <Tabs defaultValue="prompt" className="w-full">
-                <TabsList className="grid w-full grid-cols-4 gap-1">
+                <TabsList className="grid w-full grid-cols-5 gap-1">
                   <TabsTrigger value="prompt" className="text-xs">Prompt</TabsTrigger>
                   <TabsTrigger value="preset" className="text-xs">Presets</TabsTrigger>
+                  <TabsTrigger value="algorithmic" className="text-xs">Algorithm</TabsTrigger>
                   <TabsTrigger value="screenshot" className="text-xs">Screenshot</TabsTrigger>
                   <TabsTrigger value="saved" className="text-xs">Saved</TabsTrigger>
                 </TabsList>
@@ -464,6 +492,194 @@ export function GeneratorControls({ onGenerate, isGenerating, lockedColorsCount,
                         <Palette className="h-4 w-4 mr-2" />
                       )}
                       Generate from Preset{selectedPresets.length > 1 ? 's' : ''}
+                    </Button>
+                  </div>
+                </TabsContent>
+
+                {/* Algorithmic Tab */}
+                <TabsContent value="algorithmic" className="space-y-4 mt-4">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Harmony Type</Label>
+                      <RadioGroup value={algorithmicHarmony} onValueChange={(value: any) => setAlgorithmicHarmony(value)}>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="flex items-center space-x-2 border rounded-lg p-3 hover:border-primary/50 transition-colors">
+                            <RadioGroupItem value="complementary" id="harmony-complementary" />
+                            <Label htmlFor="harmony-complementary" className="flex-1 cursor-pointer">
+                              Complementary
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2 border rounded-lg p-3 hover:border-primary/50 transition-colors">
+                            <RadioGroupItem value="analogous" id="harmony-analogous" />
+                            <Label htmlFor="harmony-analogous" className="flex-1 cursor-pointer">
+                              Analogous
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2 border rounded-lg p-3 hover:border-primary/50 transition-colors">
+                            <RadioGroupItem value="triadic" id="harmony-triadic" />
+                            <Label htmlFor="harmony-triadic" className="flex-1 cursor-pointer">
+                              Triadic
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2 border rounded-lg p-3 hover:border-primary/50 transition-colors">
+                            <RadioGroupItem value="tetradic" id="harmony-tetradic" />
+                            <Label htmlFor="harmony-tetradic" className="flex-1 cursor-pointer">
+                              Tetradic
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2 border rounded-lg p-3 hover:border-primary/50 transition-colors">
+                            <RadioGroupItem value="splitComplementary" id="harmony-split" />
+                            <Label htmlFor="harmony-split" className="flex-1 cursor-pointer">
+                              Split Comp.
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2 border rounded-lg p-3 hover:border-primary/50 transition-colors">
+                            <RadioGroupItem value="monochromatic" id="harmony-mono" />
+                            <Label htmlFor="harmony-mono" className="flex-1 cursor-pointer">
+                              Monochromatic
+                            </Label>
+                          </div>
+                        </div>
+                      </RadioGroup>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="use-base-color"
+                          checked={useBaseColor}
+                          onCheckedChange={setUseBaseColor}
+                        />
+                        <Label htmlFor="use-base-color">Use Base Color</Label>
+                      </div>
+                      {useBaseColor && (
+                        <div className="space-y-2 pl-6">
+                          <Label htmlFor="base-color">Base Color</Label>
+                          <Input
+                            id="base-color"
+                            type="color"
+                            value={algorithmicBaseColor}
+                            onChange={(e) => setAlgorithmicBaseColor(e.target.value)}
+                            className="h-10 w-full"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="use-temperature"
+                          checked={useTemperature}
+                          onCheckedChange={setUseTemperature}
+                        />
+                        <Label htmlFor="use-temperature">Set Temperature</Label>
+                      </div>
+                      {useTemperature && (
+                        <div className="space-y-2 pl-6">
+                          <RadioGroup value={algorithmicTemperature || ''} onValueChange={(value: any) => setAlgorithmicTemperature(value)}>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="warm" id="temp-warm" />
+                              <Label htmlFor="temp-warm">Warm</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="cool" id="temp-cool" />
+                              <Label htmlFor="temp-cool">Cool</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="neutral" id="temp-neutral" />
+                              <Label htmlFor="temp-neutral">Neutral</Label>
+                            </div>
+                          </RadioGroup>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Saturation Level</Label>
+                      <RadioGroup value={algorithmicSaturation} onValueChange={(value: any) => setAlgorithmicSaturation(value)}>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="vibrant" id="sat-vibrant" />
+                            <Label htmlFor="sat-vibrant">Vibrant</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="moderate" id="sat-moderate" />
+                            <Label htmlFor="sat-moderate">Moderate</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="muted" id="sat-muted" />
+                            <Label htmlFor="sat-muted">Muted</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="neutral" id="sat-neutral" />
+                            <Label htmlFor="sat-neutral">Neutral</Label>
+                          </div>
+                        </div>
+                      </RadioGroup>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="use-seed"
+                          checked={useSeed}
+                          onCheckedChange={setUseSeed}
+                        />
+                        <Label htmlFor="use-seed">Use Seed (Reproducible)</Label>
+                      </div>
+                      {useSeed && (
+                        <div className="space-y-2 pl-6">
+                          <Label htmlFor="seed">Seed Number</Label>
+                          <div className="flex gap-2">
+                            <Input
+                              id="seed"
+                              type="number"
+                              value={algorithmicSeed}
+                              onChange={(e) => setAlgorithmicSeed(parseInt(e.target.value) || 0)}
+                              className="flex-1"
+                            />
+                            <Button
+                              variant="outline"
+                              onClick={() => setAlgorithmicSeed(Date.now())}
+                              size="sm"
+                            >
+                              Random
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label>Number of Colors: {colorCount}</Label>
+                      <Slider
+                        value={[colorCount]}
+                        onValueChange={(value) => onColorCountChange(value[0])}
+                        min={6}
+                        max={35}
+                        step={1}
+                        className="w-full"
+                      />
+                      <div className="flex justify-between text-xs text-muted-foreground px-2">
+                        <span className="text-center">Minimal<br />(6)</span>
+                        <span className="text-center">Balanced<br />(12)</span>
+                        <span className="text-center">Rich<br />(20)</span>
+                        <span className="text-center">Extended<br />(35)</span>
+                      </div>
+                    </div>
+
+                    <Button 
+                      onClick={handleGenerateAlgorithmic} 
+                      disabled={isGenerating}
+                      className="w-full"
+                    >
+                      {isGenerating ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-4 w-4 mr-2" />
+                      )}
+                      Generate Algorithmically
                     </Button>
                   </div>
                 </TabsContent>

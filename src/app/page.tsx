@@ -31,6 +31,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { FileText, Code, Gamepad2, ArrowLeftRight, Sparkles } from 'lucide-react';
 import { UIPalette, Color, SavedPalette, GenerationContext } from '@/types';
 import { AIService } from '@/services/ai';
+import { AlgorithmicPaletteGenerator } from '@/services/algorithmic';
 import { StorageService } from '@/services/storage';
 import { generateCSSVariables, generateSVG, generateFFHex, downloadFile } from '@/utils/color';
 import { useTheme } from '@/components/ThemeProvider';
@@ -275,6 +276,36 @@ export default function HomePage() {
 
     // Increment generation counter
     incrementCounter('generationsCount');
+
+    // Handle algorithmic generation (non-AI mode)
+    if (context.type === 'algorithmic' && context.algorithmic) {
+      setIsGenerating(true);
+      try {
+        // Get locked colors
+        const lockedColors: Color[] = [];
+        Object.values(palette).forEach((category) => {
+          if (Array.isArray(category)) {
+            lockedColors.push(...category.filter((c: Color) => c.locked));
+          }
+        });
+
+        // Generate palette using algorithmic method
+        const newPalette = AlgorithmicPaletteGenerator.generateUIPalette(
+          context.algorithmic,
+          lockedColors,
+          context.colorCount || colorCount
+        );
+        
+        setPalette(newPalette);
+        return;
+      } catch (error) {
+        console.error('Algorithmic generation error:', error);
+        alert('Failed to generate palette algorithmically. Please try again.');
+      } finally {
+        setIsGenerating(false);
+      }
+      return;
+    }
 
     // Check for demo mode
     if (context.prompt?.startsWith('DEMO_MODE_')) {
