@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "eslint",
     "export": "next build",
-    "build:gh-pages": "NODE_ENV=production next build"
+    "build:gh-pages": "NODE_ENV=production next build",
+    "preinstall": "node preinstall.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

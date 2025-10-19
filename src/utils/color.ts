@@ -285,6 +285,69 @@ export function generateRandomPalette(): string[] {
   return generateProfessionalPalette();
 }
 
+// Cosine-based palette generation (Inigo Quilez method)
+export function generateCosinePalette(
+  a: [number, number, number] = [0.5, 0.5, 0.5],
+  b: [number, number, number] = [0.5, 0.5, 0.5],
+  c: [number, number, number] = [1.0, 1.0, 1.0],
+  d: [number, number, number] = [0.0, 0.33, 0.67],
+  steps: number = 8
+): string[] {
+  const colors: string[] = [];
+  
+  for (let i = 0; i < steps; i++) {
+    const t = i / (steps - 1);
+    const r = Math.round(255 * Math.max(0, Math.min(1, a[0] + b[0] * Math.cos(2 * Math.PI * (c[0] * t + d[0])))));
+    const g = Math.round(255 * Math.max(0, Math.min(1, a[1] + b[1] * Math.cos(2 * Math.PI * (c[1] * t + d[1])))));
+    const b_val = Math.round(255 * Math.max(0, Math.min(1, a[2] + b[2] * Math.cos(2 * Math.PI * (c[2] * t + d[2])))));
+    
+    colors.push(rgbToHex(r, g, b_val));
+  }
+  
+  return colors;
+}
+
+// Seeded random number generator for deterministic results
+export class SeededRandom {
+  private seed: number;
+  
+  constructor(seed: number) {
+    this.seed = seed;
+  }
+  
+  next(): number {
+    const x = Math.sin(this.seed++) * 10000;
+    return x - Math.floor(x);
+  }
+  
+  nextInt(min: number, max: number): number {
+    return Math.floor(this.next() * (max - min + 1)) + min;
+  }
+  
+  nextFloat(min: number, max: number): number {
+    return this.next() * (max - min) + min;
+  }
+}
+
+// Generate palette with seed for reproducibility
+export function generateSeededPalette(
+  seed: number,
+  temperature?: 'warm' | 'cool' | 'neutral',
+  saturationLevel: SaturationLevel = 'moderate'
+): string[] {
+  const rng = new SeededRandom(seed);
+  
+  let hue: number;
+  if (temperature) {
+    const tempRange = COLOR_TEMPERATURE[temperature.toUpperCase() as keyof typeof COLOR_TEMPERATURE];
+    hue = rng.nextFloat(tempRange.min, tempRange.max);
+  } else {
+    hue = rng.nextFloat(0, 360);
+  }
+  
+  return generateProfessionalPalette(hue, temperature, saturationLevel);
+}
+
 export function hslToHex(h: number, s: number, l: number): string {
   l /= 100;
   const a = s * Math.min(l, 1 - l) / 100;

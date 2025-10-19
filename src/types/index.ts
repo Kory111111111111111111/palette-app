@@ -40,8 +40,16 @@ export interface ScreenshotAnalysis {
   imageData: string;
 }
 
+export interface AlgorithmicConfig {
+  harmonyType: 'complementary' | 'analogous' | 'triadic' | 'tetradic' | 'splitComplementary' | 'monochromatic';
+  baseColor?: string;
+  temperature?: 'warm' | 'cool' | 'neutral';
+  saturationLevel?: 'vibrant' | 'moderate' | 'muted' | 'neutral';
+  seed?: number;
+}
+
 export interface GenerationContext {
-  type: 'prompt' | 'preset_inspired' | 'preset_strict' | 'screenshot_refined';
+  type: 'prompt' | 'preset_inspired' | 'preset_strict' | 'screenshot_refined' | 'algorithmic';
   prompt?: string;
   presetPalettes?: PresetPalette[];
   lockedColors?: Color[];
@@ -50,6 +58,7 @@ export interface GenerationContext {
     imageData: string;
     answers: Record<string, string>;
   };
+  algorithmic?: AlgorithmicConfig;
 }
 
 export interface ExportFormat {
